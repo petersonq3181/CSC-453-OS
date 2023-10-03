@@ -37,20 +37,9 @@ void print_processes(Process processes[], int n_processes) {
   }
 }
 
-
 void signal_handler(int signum, siginfo_t *si, void *unused) {
-  /* 
-  if (signum == SIGCHLD) {
-    printf("IN signal_handler, SIGCHLD\n");
-  } else if (signum == SIGALRM) {
-    printf("IN signal_handler, SIGALRM\n");
-  } else {
-    printf("IN signal_handler, signum = %d\n", signum);
-  }
-  fflush(stdout);
-  */ 
-}
 
+}
 
 int main(int argc, char *argv[]) {
 
@@ -107,17 +96,11 @@ int main(int argc, char *argv[]) {
     n_processes++;
   }
 
+  /*
   print_processes(processes, n_processes);
-  printf("donee printing processes\n");
-
-
-
-
-
-
-
-
-
+  printf("done printing processes\n\n");
+  */ 
+  
   sigset_t mask;
   struct itimerval timer;
   struct sigaction sa;
@@ -147,15 +130,10 @@ int main(int argc, char *argv[]) {
   while (live_processes > 0) {
     for (int i = 0; i < n_processes; i++) {
       if (processes[i].pid > 0) { 
-        printf("will resume process: %d\n", processes[i].pid);
-
         kill(processes[i].pid, SIGCONT);
-        printf("post kill 1\n");
-        
         
         usleep(quantum * 1000);
         kill(processes[i].pid, SIGSTOP); 
-        
         
         pid_t pid;
         while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
@@ -171,15 +149,12 @@ int main(int argc, char *argv[]) {
     }
   }
   
-  /* Clean up: Ensure all child processes are terminated */
+  /* cleanup children */
   for (int i = 0; i < n_processes; i++) {
     if (processes[i].pid > 0) {
       kill(processes[i].pid, SIGKILL);
     }
   }
-
-  printf("All processes have completed.\n");
-
 
   return 0;
 }
