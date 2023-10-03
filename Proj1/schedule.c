@@ -16,11 +16,45 @@ typedef struct {
   pid_t pid;
 } Process;
 
+int ALRM = 0;
+int CHLD = 0;
 
-void print_processes(Process processes[], int n_processes);
+void print_processes(Process processes[], int n_processes) {
+  printf("Number of Processes: %d\n", n_processes);
 
-void signal_handler(int signum, siginfo_t *si, void *unused);
+  int i;
+  for (i = 0; i < n_processes; i++) {
+    printf("Process %d\n", i+1);
+    printf("\tCommand: %s\n", processes[i].cmd);
+    printf("\tPID: %d\n", processes[i].pid);
 
+    if (processes[i].args[0] != NULL) {
+      printf("\tArguments: ");
+      int j = 0;
+      while (processes[i].args[j] != NULL) {
+        printf("%s ", processes[i].args[j]);
+        j++;
+      }
+      printf("\n");
+    }
+  }
+}
+
+void signal_handler(int signum, siginfo_t *si, void *unused) {
+  if (signum == SIGALRM) {
+    /*
+    printf("in signal_hanlder SIGALRM\n");
+    fflush(stdout);
+    */
+    ALRM = 1;
+  } else if (signum == SIGCHLD) {
+    /*
+    printf("in signal_hanlder SIGCHLD\n");
+    fflush(stdout);
+    */
+    CHLD = 1;
+  }
+}
 
 int main(int argc, char *argv[]) {
 
@@ -63,9 +97,8 @@ int main(int argc, char *argv[]) {
 
     processes[n_processes].pid = fork();
     if (processes[n_processes].pid == 0) { 
-      pause();
+      /* pause(); */
       execvp(processes[n_processes].cmd, processes[n_processes].args);
-      printf("execvp failed\n");
       exit(EXIT_FAILURE); 
     } else if (processes[n_processes].pid > 0) { 
       live_processes++;
@@ -78,78 +111,83 @@ int main(int argc, char *argv[]) {
     n_processes++;
   }
 
+  /*
   print_processes(processes, n_processes);
   printf("done printing processes\n\n");
-
-
-  /* Config and start timer */
+  */ 
+  
+  sigset_t mask;
   struct itimerval timer;
+  struct sigaction sa;
+  
+  /* Set up signal handler */
+  sa.sa_flags = SA_SIGINFO;
+  sa.sa_sigaction = &signal_handler;
+  sigemptyset(&sa.sa_mask);
+  if (sigaction(SIGCHLD, &sa, NULL) == -1 || sigaction(SIGALRM, &sa, NULL) == -1) {
+    perror("sigaction");
+    exit(EXIT_FAILURE);
+  }
+  
+  sigemptyset(&mask);
+
+  /* Configure timer */
   timer.it_interval.tv_sec = quantum / 1000;
   timer.it_interval.tv_usec = (quantum % 1000) * 1000;
   timer.it_value = timer.it_interval;
+  
+  /* Starting timer */
   if (setitimer(ITIMER_REAL, &timer, NULL) == -1) {
     perror("setitimer");
     exit(EXIT_FAILURE);
   }
 
+  while (live_processes > 0) {
+    for (int i = 0; i < n_processes; i++) {
+      if (processes[i].pid > 0) { 
+        kill(processes[i].pid, SIGCONT);
+        ALRM = 0;
+        CHLD = 0;
+        
+        while (1) {
 
-  /* Config signal logic */
-  sigset_t waitset;
-  int sig;
+          // printf("stuck hereeeee 0\n");
+          if (ALRM) {
+            // printf("stuck here 1\n");
+            kill(processes[i].pid, SIGSTOP);  
+            break; 
+          } else if (CHLD) {
+            pid_t pid;
+            while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+              live_processes--;
+              for (int j = 0; j < n_processes; j++) {
+                if (processes[j].pid == pid) {
+                  processes[j].pid = -1; 
+                  break;
+                }
+              }
+            }
 
-  sigemptyset(&waitset);
-  sigaddset(&waitset, SIGALRM);
-  sigaddset(&waitset, SIGCHLD);
+            // printf("stuck here 2\n");
 
-  /* block */
-  if (sigprocmask(SIG_BLOCK, &waitset, NULL) == -1) {
-    perror("sigprocmask\n");
-    exit(EXIT_FAILURE);
-  }
-
-  kill(processes[0].pid, SIGCONT);
-
-
-  /* wait for signals */
-  if (sigwait(&waitset, &sig) != 0) {
-    perror("sigwait\n");
-    exit(EXIT_FAILURE);
-  }
-
-  if (sig == SIGALRM) {
-    printf("entered SIGALRM branch\n");
-  } else if (sig == SIGCHLD) {
-    printf("entered SIGCHLD branch\n");
-  }
-
-  
-  return 0;
-}
-
-void print_processes(Process processes[], int n_processes) {
-  printf("Number of Processes: %d\n", n_processes);
-
-  int i;
-  for (i = 0; i < n_processes; i++) {
-    printf("Process %d\n", i+1);
-    printf("\tCommand: %s\n", processes[i].cmd);
-    printf("\tPID: %d\n", processes[i].pid);
-
-    if (processes[i].args[0] != NULL) {
-      printf("\tArguments: ");
-      int j = 0;
-      while (processes[i].args[j] != NULL) {
-        printf("%s ", processes[i].args[j]);
-        j++;
+            if (setitimer(ITIMER_REAL, &timer, NULL) == -1) {
+              perror("setitimer");
+              exit(EXIT_FAILURE);
+            }
+            break; 
+          }
+          // sleep(2);
+        }
       }
-      printf("\n");
     }
   }
-}
-
-void signal_handler(int signum, siginfo_t *si, void *unused) { 
-  if (signum == SIGALRM) { 
-    printf("IN signal_handler, SIGALRM\n");
-    fflush(stdout);
+  
+  /* cleanup children */
+  for (int i = 0; i < n_processes; i++) {
+    if (processes[i].pid > 0) {
+      kill(processes[i].pid, SIGKILL);
+    }
   }
+
+  return 0;
 }
