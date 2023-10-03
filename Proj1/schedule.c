@@ -16,30 +16,12 @@ typedef struct {
   pid_t pid;
 } Process;
 
-void print_processes(Process processes[], int n_processes) {
-  printf("Number of Processes: %d\n", n_processes);
+void init_procs(Process *processes, int *n_processes, int *live_processes, long *quantum);
 
-  int i;
-  for (i = 0; i < n_processes; i++) {
-    printf("Process %d\n", i+1);
-    printf("\tCommand: %s\n", processes[i].cmd);
-    printf("\tPID: %d\n", processes[i].pid);
+void print_processes(Process processes[], int n_processes);
 
-    if (processes[i].args[0] != NULL) {
-      printf("\tArguments: ");
-      int j = 0;
-      while (processes[i].args[j] != NULL) {
-        printf("%s ", processes[i].args[j]);
-        j++;
-      }
-      printf("\n");
-    }
-  }
-}
+void signal_handler(int signum, siginfo_t *si, void *unused);
 
-void signal_handler(int signum, siginfo_t *si, void *unused) {
-
-}
 
 int main(int argc, char *argv[]) {
 
@@ -157,4 +139,34 @@ int main(int argc, char *argv[]) {
   }
 
   return 0;
+}
+
+
+void init_procs(Process *processes, int *n_processes, int *live_processes, long *quantum) {
+  
+}
+
+void print_processes(Process processes[], int n_processes) {
+  printf("Number of Processes: %d\n", n_processes);
+
+  int i;
+  for (i = 0; i < n_processes; i++) {
+    printf("Process %d\n", i+1);
+    printf("\tCommand: %s\n", processes[i].cmd);
+    printf("\tPID: %d\n", processes[i].pid);
+
+    if (processes[i].args[0] != NULL) {
+      printf("\tArguments: ");
+      int j = 0;
+      while (processes[i].args[j] != NULL) {
+        printf("%s ", processes[i].args[j]);
+        j++;
+      }
+      printf("\n");
+    }
+  }
+}
+
+void signal_handler(int signum, siginfo_t *si, void *unused) {
+
 }
