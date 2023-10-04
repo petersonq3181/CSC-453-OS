@@ -94,12 +94,25 @@ int main(int argc, char *argv[])
     processes[n_processes].pid = fork();
     if (processes[n_processes].pid == 0)
     {
-      /* pause(); */
+      printf("in child %d before pause\n", getpid());
+      kill(getpid(), SIGSTOP);
+      printf("in child %d after pause\n", getpid());
+
       execvp(processes[n_processes].cmd, processes[n_processes].args);
       exit(EXIT_FAILURE);
     }
     else if (processes[n_processes].pid > 0)
     {
+      printf("waiting for cur child\n");
+
+      if (waitpid(processes[n_processes].pid, NULL, WUNTRACED) < 0)
+      {
+        printf("waitpid error\n");
+        exit(EXIT_FAILURE);
+      }
+
+      printf("done waiting for cur child\n");
+
       live_processes++;
       kill(processes[n_processes].pid, SIGSTOP);
     }
@@ -112,10 +125,8 @@ int main(int argc, char *argv[])
     n_processes++;
   }
 
-  /*
   print_processes(processes, n_processes);
   printf("done printing processes\n\n");
-  */
 
   sigset_t mask;
   struct itimerval timer;
@@ -159,7 +170,7 @@ int main(int argc, char *argv[])
         kill(processes[i].pid, SIGSTOP);
 
         pid_t pid;
-        while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
+        while ((pid = waitpid(processes[i].pid, NULL, WNOHANG)) > 0)
         {
           live_processes--;
           for (j = 0; j < n_processes; j++)
