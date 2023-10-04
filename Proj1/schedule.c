@@ -17,9 +17,6 @@ typedef struct
   pid_t pid;
 } Process;
 
-int ALRM = 0;
-int CHLD = 0;
-
 void print_processes(Process processes[], int n_processes)
 {
   printf("Number of Processes: %d\n", n_processes);
@@ -47,22 +44,6 @@ void print_processes(Process processes[], int n_processes)
 
 void signal_handler(int signum, siginfo_t *si, void *unused)
 {
-  if (signum == SIGALRM)
-  {
-    /*
-    printf("in signal_hanlder SIGALRM\n");
-    fflush(stdout);
-    */
-    ALRM = 1;
-  }
-  else if (signum == SIGCHLD)
-  {
-    /*
-    printf("in signal_hanlder SIGCHLD\n");
-    fflush(stdout);
-    */
-    CHLD = 1;
-  }
 }
 
 int main(int argc, char *argv[])
@@ -172,43 +153,23 @@ int main(int argc, char *argv[])
     {
       if (processes[i].pid > 0)
       {
-        printf("starting process: %d\n", processes[i].pid);
         kill(processes[i].pid, SIGCONT);
-        ALRM = 0;
-        CHLD = 0;
 
-        while (1)
+        usleep(quantum * 1000);
+        kill(processes[i].pid, SIGSTOP);
+
+        pid_t pid;
+        while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
         {
-
-          if (ALRM)
+          live_processes--;
+          for (j = 0; j < n_processes; j++)
           {
-            kill(processes[i].pid, SIGSTOP);
-            break;
-          }
-          else if (CHLD)
-          {
-            pid_t pid;
-            while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
+            if (processes[j].pid == pid)
             {
-              live_processes--;
-              for (j = 0; j < n_processes; j++)
-              {
-                if (processes[j].pid == pid)
-                {
-                  processes[j].pid = -1;
-                  break;
-                }
-              }
+              processes[j].pid = -1;
+              break;
             }
-
-            if (setitimer(ITIMER_REAL, &timer, NULL) == -1)
-            {
-              perror("setitimer");
-              exit(EXIT_FAILURE);
-            }
-            break;
           }
-          /*sleep(2)*/
         }
       }
     }
