@@ -17,34 +17,8 @@ typedef struct
   pid_t pid;
 } Process;
 
-void print_processes(Process processes[], int n_processes)
-{
-  printf("Number of Processes: %d\n", n_processes);
-
-  int i;
-  for (i = 0; i < n_processes; i++)
-  {
-    printf("Process %d\n", i + 1);
-    printf("\tCommand: %s\n", processes[i].cmd);
-    printf("\tPID: %d\n", processes[i].pid);
-
-    if (processes[i].args[0] != NULL)
-    {
-      printf("\tArguments: ");
-      int j = 0;
-      while (processes[i].args[j] != NULL)
-      {
-        printf("%s ", processes[i].args[j]);
-        j++;
-      }
-      printf("\n");
-    }
-  }
-}
-
-void signal_handler(int signum, siginfo_t *si, void *unused)
-{
-}
+void print_processes(Process processes[], int n_processes);
+void signal_handler(int signum, siginfo_t *si, void *unused);
 
 int main(int argc, char *argv[])
 {
@@ -52,7 +26,7 @@ int main(int argc, char *argv[])
   /* ----- parsing: create and pause each process */
   if (argc < 3)
   {
-    printf("Usage: %s quantum prog1 [args] : prog2 [args] ...\n", argv[0]);
+    printf("Please input in this format: %s quantum prog1 [args] : prog2 [args] ...\n", argv[0]);
     exit(-1);
   }
 
@@ -188,4 +162,35 @@ int main(int argc, char *argv[])
   }
 
   return 0;
+}
+
+void print_processes(Process processes[], int n_processes)
+{
+  /* helper function for debugging */
+
+  printf("Number of Processes: %d\n", n_processes);
+
+  int i;
+  for (i = 0; i < n_processes; i++)
+  {
+    printf("Process %d\n", i + 1);
+    printf("\tCommand: %s\n", processes[i].cmd);
+    printf("\tPID: %d\n", processes[i].pid);
+
+    if (processes[i].args[0] != NULL)
+    {
+      printf("\tArguments: ");
+      int j = 0;
+      while (processes[i].args[j] != NULL)
+      {
+        printf("%s ", processes[i].args[j]);
+        j++;
+      }
+      printf("\n");
+    }
+  }
+}
+
+void signal_handler(int signum, siginfo_t *si, void *unused)
+{
 }
