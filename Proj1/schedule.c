@@ -49,7 +49,7 @@ void signal_handler(int signum, siginfo_t *si, void *unused)
 int main(int argc, char *argv[])
 {
 
-  /* ----- parsing, and create and pause each process */
+  /* ----- parsing: create and pause each process */
   if (argc < 3)
   {
     printf("Usage: %s quantum prog1 [args] : prog2 [args] ...\n", argv[0]);
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
       continue;
     }
 
+    /* add process args */
     processes[n_processes].cmd = argv[arg_cursor];
     processes[n_processes].args[0] = argv[arg_cursor];
 
@@ -91,34 +92,27 @@ int main(int argc, char *argv[])
 
     processes[n_processes].args[n_args] = NULL;
 
+    /* fork child processes, immediately stop, and add pids to processes stuct */
     processes[n_processes].pid = fork();
-    if (processes[n_processes].pid == 0)
+    if (processes[n_processes].pid == 0) /* child */
     {
-      /* printf("in child %d before pause\n", getpid()); */
-
+      /* immediately stop self */
       kill(getpid(), SIGSTOP);
 
-      /* printf("in child %d after pause\n", getpid()); */
-
+      /* execute specified process */
       execvp(processes[n_processes].cmd, processes[n_processes].args);
       exit(EXIT_FAILURE);
     }
-    else if (processes[n_processes].pid > 0)
+    else if (processes[n_processes].pid > 0) /* parent */
     {
-      /*
-      printf("waiting for cur child\n");
-      */
-
+      /* wait for the child to stop itself */
       if (waitpid(processes[n_processes].pid, NULL, WUNTRACED) < 0)
       {
         printf("waitpid error\n");
         exit(EXIT_FAILURE);
       }
 
-      /* printf("done waiting for cur child\n"); */
-
       live_processes++;
-      kill(processes[n_processes].pid, SIGSTOP);
     }
     else
     {
@@ -129,16 +123,15 @@ int main(int argc, char *argv[])
     n_processes++;
   }
 
+  /* print process array to validate the parsing */
   /*
   print_processes(processes, n_processes);
   printf("done printing processes\n\n");
   */
 
+  /* congig signal handler */
   sigset_t mask;
-  struct itimerval timer;
   struct sigaction sa;
-
-  /* Set up signal handler */
   sa.sa_flags = SA_SIGINFO;
   sa.sa_sigaction = &signal_handler;
   sigemptyset(&sa.sa_mask);
@@ -147,34 +140,36 @@ int main(int argc, char *argv[])
     perror("sigaction");
     exit(EXIT_FAILURE);
   }
-
   sigemptyset(&mask);
 
-  /* Configure timer */
+  /* config timer */
+  struct itimerval timer;
   timer.it_interval.tv_sec = quantum / 1000;
   timer.it_interval.tv_usec = (quantum % 1000) * 1000;
   timer.it_value = timer.it_interval;
-
-  /* Starting timer */
   if (setitimer(ITIMER_REAL, &timer, NULL) == -1)
   {
     perror("setitimer");
     exit(EXIT_FAILURE);
   }
 
+  /* ----- main scheduling loop */
   int i;
   int j;
+
   while (live_processes > 0)
   {
     for (i = 0; i < n_processes; i++)
     {
       if (processes[i].pid > 0)
       {
+        /* continue and stop the process */
         kill(processes[i].pid, SIGCONT);
 
         usleep(quantum * 1000);
         kill(processes[i].pid, SIGSTOP);
 
+        /* remove process from schedule if it has terminated */
         pid_t pid;
         while ((pid = waitpid(processes[i].pid, NULL, WNOHANG)) > 0)
         {
@@ -189,15 +184,6 @@ int main(int argc, char *argv[])
           }
         }
       }
-    }
-  }
-
-  /* cleanup children */
-  for (i = 0; i < n_processes; i++)
-  {
-    if (processes[i].pid > 0)
-    {
-      kill(processes[i].pid, SIGKILL);
     }
   }
 
