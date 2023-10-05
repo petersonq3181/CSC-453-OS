@@ -50,17 +50,17 @@ void signal_handler(int signum, siginfo_t *si, void *unused)
   if (signum == SIGALRM)
   {
     /*
-    printf("in signal_hanlder SIGALRM\n");
-    fflush(stdout);
-    */
+ *     printf("in signal_hanlder SIGALRM\n");
+ *         fflush(stdout);
+ *             */
     ALRM = 1;
   }
   else if (signum == SIGCHLD)
   {
     /*
-    printf("in signal_hanlder SIGCHLD\n");
-    fflush(stdout);
-    */
+ *     printf("in signal_hanlder SIGCHLD\n");
+ *         fflush(stdout);
+ *             */
     CHLD = 1;
   }
 }
@@ -113,16 +113,16 @@ int main(int argc, char *argv[])
     processes[n_processes].pid = fork();
     if (processes[n_processes].pid == 0)
     {
-      printf("in child %d before pause\n", getpid());
+      /* printf("in child %d before pause\n", getpid()); */
       kill(getpid(), SIGSTOP);
-      printf("in child %d after pause\n", getpid());
+      /* printf("in child %d after pause\n", getpid()); */
 
       execvp(processes[n_processes].cmd, processes[n_processes].args);
       exit(EXIT_FAILURE);
     }
     else if (processes[n_processes].pid > 0)
     {
-      printf("waiting for cur child\n");
+      /* printf("waiting for cur child\n"); */
 
       if (waitpid(processes[n_processes].pid, NULL, WUNTRACED) < 0)
       {
@@ -130,10 +130,9 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
       }
 
-      printf("done waiting for cur child\n");
+      /* printf("done waiting for cur child\n"); */
 
       live_processes++;
-      kill(processes[n_processes].pid, SIGSTOP);
     }
     else
     {
@@ -145,9 +144,9 @@ int main(int argc, char *argv[])
   }
 
   /*
-  print_processes(processes, n_processes);
-  printf("done printing processes\n\n");
-  */
+ *   print_processes(processes, n_processes);
+ *     printf("done printing processes\n\n");
+ *       */
 
   sigset_t mask;
   struct itimerval timer;
@@ -157,7 +156,7 @@ int main(int argc, char *argv[])
   sa.sa_flags = SA_SIGINFO;
   sa.sa_sigaction = &signal_handler;
   sigemptyset(&sa.sa_mask);
-  if (sigaction(SIGCHLD, &sa, NULL) == -1 || sigaction(SIGALRM, &sa, NULL) == -1)
+  if (sigaction(SIGALRM, &sa, NULL) == -1)
   {
     perror("sigaction");
     exit(EXIT_FAILURE);
