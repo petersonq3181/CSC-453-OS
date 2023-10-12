@@ -1,0 +1,197 @@
+<mxfile host="Electron" modified="2023-10-12T21:13:47.594Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.8 Chrome/114.0.5735.289 Electron/25.5.0 Safari/537.36" etag="iv4Y4LPERCLrb9wWyvcA" version="21.6.8" type="device">
+  <diagram name="Page-1" id="2Rr4igSCqCrsHj3c7GMh">
+    <mxGraphModel dx="413" dy="712" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="413" pageHeight="583" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-3" value="Scheduler&lt;br&gt;&lt;br&gt;Funcs sched-&amp;gt;&lt;br&gt;init()&lt;br&gt;shudown()&lt;br&gt;admit()&lt;br&gt;remove()&lt;br&gt;next()&lt;br&gt;qlen()" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="70" width="240" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-13" value="&lt;b&gt;&lt;i&gt;&lt;u&gt;Things and Details&lt;/u&gt;&lt;/i&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="10" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-14" value="&lt;b&gt;&lt;i&gt;&lt;u&gt;Func Details&lt;/u&gt;&lt;/i&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="340" y="590" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-15" value="lwp_start()" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="670" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" edge="1" parent="1" source="C5FNr-j3OubUrF0ACw5U-16" target="C5FNr-j3OubUrF0ACw5U-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-19" value="Admit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="C5FNr-j3OubUrF0ACw5U-18">
+          <mxGeometry x="-0.3922" y="4" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-16" value="lwp_create()&lt;br&gt;on original thread (main) ;&lt;br&gt;allocate context but not a stack b/c main has one" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="435" y="650" width="180" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-17" value="Scheduler&lt;br&gt;&lt;br&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="715" y="680" width="90" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-20" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="640" width="20" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-21" value="lwp_yield()" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="870" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-22" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="840" width="20" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="700" y="930" as="targetPoint" />
+            <mxPoint x="539" y="930" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-26" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="C5FNr-j3OubUrF0ACw5U-25">
+          <mxGeometry x="0.0033" y="-3" relative="1" as="geometry">
+            <mxPoint x="2" y="3" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-27" value="Yes: yield control to next" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="C5FNr-j3OubUrF0ACw5U-25">
+          <mxGeometry x="0.0533" y="-5" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="C5FNr-j3OubUrF0ACw5U-23" target="C5FNr-j3OubUrF0ACw5U-31">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="870" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-29" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="C5FNr-j3OubUrF0ACw5U-28">
+          <mxGeometry x="-0.0164" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-23" value="If next in scheduler?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="890" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-31" value="Call exit(3) w/ termination status of calling thread" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="840" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-32" value="lwp_exit()" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="1050" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-33" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1020" width="20" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-38" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="C5FNr-j3OubUrF0ACw5U-34" target="C5FNr-j3OubUrF0ACw5U-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-34" value="terminates calling thread" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="1020" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-39" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="C5FNr-j3OubUrF0ACw5U-36" target="C5FNr-j3OubUrF0ACw5U-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-36" value="lwp_wait()&lt;br&gt;to deallocate resources" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="1110" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-37" value="lwp_yield() to yield control to next" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="1200" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-40" value="lwp_wait()" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="1390" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-41" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1360" width="20" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=-0.023;entryY=0.153;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" target="C5FNr-j3OubUrF0ACw5U-49">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="1420" as="targetPoint" />
+            <mxPoint x="509" y="1420" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-44" value="Yes" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="C5FNr-j3OubUrF0ACw5U-42">
+          <mxGeometry x="0.0533" y="-5" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="C5FNr-j3OubUrF0ACw5U-47" target="C5FNr-j3OubUrF0ACw5U-48">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="510" y="1360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-46" value="No" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="C5FNr-j3OubUrF0ACw5U-45">
+          <mxGeometry x="-0.0164" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-47" value="any LWP&#39;s terminate?" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="1380" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-48" value="caller blocks until one terminates" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="1330" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-49" value="&lt;br&gt;use FIFO queue for multiple&amp;nbsp;&lt;br&gt;&lt;br&gt;deallocates resources;&lt;br&gt;&lt;br&gt;returns TID of terminated&lt;br&gt;(make sure do note deallocate stack of original LWP)&amp;nbsp;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1410" width="180" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-50" value="lwp_create()" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="1630" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-51" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="1600" width="20" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-52" value="lwpfun function, void*argument" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="515" y="1600" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-53" value="execute" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1991" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="C5FNr-j3OubUrF0ACw5U-54" target="C5FNr-j3OubUrF0ACw5U-53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-54" value="While&lt;br&gt;no func return w/ termination status&lt;br&gt;or&amp;nbsp;&lt;br&gt;thread doesn&#39;t call lwp_exit()" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="425" y="1830" width="290" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-62" value="" style="group" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="880" y="70" width="270" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-60" value="magic64.s&lt;br&gt;&lt;br&gt;Script which holds func to call to swap register files (stores one; loads another):&amp;nbsp;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="C5FNr-j3OubUrF0ACw5U-62">
+          <mxGeometry width="270" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-61" value="swap_rfiles()" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;" vertex="1" parent="C5FNr-j3OubUrF0ACw5U-62">
+          <mxGeometry x="75" y="180" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-9" value="Thread Resources" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="137" y="30" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-73" value="" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="20" y="70" width="430" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-76" value="&lt;ul&gt;&lt;li&gt;TID&lt;/li&gt;&lt;li&gt;pointer to base of stack&lt;/li&gt;&lt;li&gt;struct registers (name: rfile)&amp;nbsp;&lt;/li&gt;&lt;li&gt;status&amp;nbsp;&lt;/li&gt;&lt;li&gt;4 pointers&amp;nbsp;&lt;/li&gt;&lt;ul&gt;&lt;li&gt;lib_one&lt;/li&gt;&lt;li&gt;lib_two&lt;/li&gt;&lt;li&gt;sched_one&lt;/li&gt;&lt;li&gt;sched_two&lt;/li&gt;&lt;/ul&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="100" width="300" height="164" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-74" value="Context (See PDF lwp.h context struct def for specifics)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="48" y="70" width="365" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-8" value="Stack&lt;br&gt;- created w/ mmap(2)&amp;nbsp;&lt;br&gt;- undone w/ munmap(2)" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="50" y="280" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-57" value="Status:&lt;br&gt;&lt;br&gt;(flag)&amp;nbsp;&lt;br&gt;LWP_LIVE or&lt;br&gt;LWP_TERM&lt;br&gt;&lt;br&gt;and&amp;nbsp;&lt;br&gt;8-bit int passed back via lwp_wait()&lt;br&gt;&lt;br&gt;(see PDF &#39;termination status&#39;)&amp;nbsp;" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="140" y="280" width="180" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-7" value="rfile&lt;br&gt;(register file)&lt;br&gt;(register values)&lt;br&gt;&lt;br&gt;(loaded via swap_rfiles())" style="whiteSpace=wrap;html=1;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="330" y="280" width="110" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-77" value="Allocate stack and context" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="505" y="1660" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-78" value="Init stack frame and load context" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="505" y="1740" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-79" value="&lt;b&gt;&lt;i&gt;&lt;u&gt;Process Steps (lvl 0)&lt;/u&gt;&lt;/i&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="590" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-80" value="lwp_create()&lt;br&gt;(Special: for original thread main)" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="710" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="C5FNr-j3OubUrF0ACw5U-82" value="schedule-&amp;gt;admit() thread" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="800" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
