@@ -1,11 +1,6 @@
 #include <stdlib.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include "lwp.h"
-
-
-/*
-* --------- Scheduler 
-*/
 
 typedef struct Node {
     thread t;
@@ -26,7 +21,8 @@ static void fifo_scheduler_shutdown(void) {
     while (head != NULL) {
         temp = head;
         head = head->next;
-        free(temp);
+        free(temp->t); 
+        free(temp);    
     }
     tail = NULL;
 }
@@ -54,18 +50,15 @@ static void fifo_scheduler_remove(thread victim) {
     Node* temp = head;
     Node* prev = NULL;
 
-    /* search for the victim thread */
     while (temp != NULL && temp->t != victim) {
         prev = temp;
         temp = temp->next;
     }
 
-    /* if the thread was not found, return */
     if (temp == NULL) {
         return;
     }
 
-    /* if the thread to be removed is the head */
     if (prev == NULL) {
         head = temp->next;
         if (head == NULL) {
@@ -77,6 +70,7 @@ static void fifo_scheduler_remove(thread victim) {
             tail = prev;
         }
     }
+    free(temp->t);
     free(temp);
 }
 
@@ -109,7 +103,7 @@ static int fifo_scheduler_qlen(void) {
 }
 
 /* define and initialize the scheduler struct */
-struct scheduler fifo_scheduler = {
+static struct scheduler fifo_scheduler = {
     .init = fifo_scheduler_init,
     .shutdown = fifo_scheduler_shutdown,
     .admit = fifo_scheduler_admit,
@@ -120,8 +114,24 @@ struct scheduler fifo_scheduler = {
 
 int main() {
     /* use fifo_scheduler to interact with this scheduler */
-    scheduler fifo_sched = &fifo_scheduler;
+    scheduler sched = &fifo_scheduler;
+    sched->init();
+    
+    printf("Scheduler initialized. Admitting threads...\n");
 
+    /* Allocating and creating dummy threads. */
+    thread thread1 = malloc(sizeof(struct threadinfo_st));
+    thread thread2 = malloc(sizeof(struct threadinfo_st));
+    thread1->tid = 1;
+    thread2->tid = 2;
+
+    /* Admitting threads. */
+    sched->admit(thread1);
+    sched->admit(thread2);
+
+    printf("Two threads admitted to the scheduler. Queue length: %d\n", sched->qlen());
+
+    sched->shutdown();
 
     printf("got here\n");
 
