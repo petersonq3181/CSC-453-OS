@@ -3,8 +3,6 @@
 #include <sys/mman.h>
 #include "lwp.h"
 
-tid_t tid_counter = 1;
-
 typedef struct Node {
     thread t;
     struct Node* next;
@@ -105,7 +103,6 @@ static int fifo_scheduler_qlen(void) {
     return count;
 }
 
-/* define and initialize the scheduler struct */
 static struct scheduler fifo_scheduler = {
     .init = fifo_scheduler_init,
     .shutdown = fifo_scheduler_shutdown,
@@ -114,76 +111,5 @@ static struct scheduler fifo_scheduler = {
     .next = fifo_scheduler_next,
     .qlen = fifo_scheduler_qlen
 };
+
 scheduler sched = &fifo_scheduler;
-
-tid_t lwp_create(lwpfun function, void *argument) {
-    thread new_thread = (thread) malloc(sizeof(new_thread));
-    if (!new_thread) {
-        perror("malloc failed to allocate new thread context\n");
-        return -1;
-    }
-
-    new_thread->tid = tid_counter;
-    tid_counter++; 
-
-    /* for now allocate just a bit of bytes for testing */
-    int howbig = 8;
-
-    new_thread->stack = mmap(NULL, howbig, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
-    if (new_thread->stack == MAP_FAILED) {
-        perror("mmap failed");
-        return -1;
-    }
-    new_thread->stacksize = howbig;
-
-    unsigned long* endofstack;
-    endofstack = new_thread->stack + howbig; 
-    /* if end of stack isn't div by 16, adjust it by subtracting */
-    if ((unsigned long)endofstack % 16 != 0) {
-        endofstack = (unsigned long*)((unsigned long)endofstack - ((unsigned long)endofstack % 16));
-    }
-
-    /* push function to stack */
-    *(endofstack - 1) = &function; 
-
-    /* this is correct */
-    new_thread->state.rdi = &function;
-    new_thread->state.rsi = argument;
-    new_thread->state.fxsave = FPU_INIT;
-
-    /* ? setup rfile to 'return to' LWP's stack */
-    new_thread->state.rbp = (unsigned long) endofstack;
-    new_thread->state.rsp = (unsigned long) (endofstack - 2);
-
-    /* admit thread to scheduler */
-    sched->admit(new_thread);
-
-    return new_thread->tid;
-}
-
-static void lwp_wrap(lwpfun fun, void *arg) {
-    int rval;
-    rval = fun(arg);
-    lwp_exit(rval); 
-}
-
-void lwp_exit(int status) {
-
-
-}
-
-
-int lwpfuntest(void *a) {
-    int res = (int) a + 1;
-    return res;
-}
-
-int main() {
-    
-    int value = 10;
-    void *arg = &value;
-    tid_t ret = lwp_create((lwpfun) lwpfuntest, arg);
-
-
-    return 0;
-}

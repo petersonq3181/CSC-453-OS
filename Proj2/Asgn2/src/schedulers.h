@@ -1,9 +1,12 @@
 #ifndef SCHEDULERSH
 #define SCHEDULERSH
 
-#include <lwp.h>
+#include "lwp.h"
 extern scheduler AlwaysZero;
 extern scheduler ChangeOnSIGTSTP;
 extern scheduler ChooseHighestColor;
 extern scheduler ChooseLowestColor;
+
+extern scheduler sched;
+
 #endif
