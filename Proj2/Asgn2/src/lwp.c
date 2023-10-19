@@ -10,6 +10,11 @@ thread* thread_main = NULL;
 tid_t tid_cur = 0;
 thread thread_cur = NULL;
 
+static void lwp_wrap(lwpfun fun, void *arg) {
+    int rval;
+    rval = fun(arg);
+    lwp_exit(rval); 
+}
 
 tid_t lwp_create(lwpfun function, void *argument) {
 
@@ -34,34 +39,30 @@ tid_t lwp_create(lwpfun function, void *argument) {
     new_thread->stacksize = howbig;
 
     printf("new  tid: %d\n", new_thread->tid);
-    printf("new_thread->stack: %p\n", new_thread->stack); // Print new_thread->stack value
+    printf("new_thread->stack: %p\n", new_thread->stack);
 
 
     unsigned long* endofstack;
-    // endofstack = new_thread->stack + howbig; 
     endofstack = (unsigned long*)((char*)new_thread->stack + howbig);
 
-
-
-    printf("endofstack (before adjustment): %p\n", endofstack); // Print endofstack value before adjustment
-
+    printf("endofstack (before adjustment): %p\n", endofstack);
 
     /* if end of stack isn't div by 16, adjust it by subtracting */
     if ((unsigned long)endofstack % 16 != 0) {
         endofstack = (unsigned long*)((unsigned long)endofstack - ((unsigned long)endofstack % 16));
     }
 
-    printf("endofstack (after adjustment): %p\n", endofstack); // Print endofstack value after adjustment
+    printf("endofstack (after adjustment): %p\n", endofstack);
 
 
     /* push function to stack */
-    *(endofstack - 1) = (unsigned long) function;
+    *(endofstack - 1) = (unsigned long) lwp_wrap;
 
     /* setup rfile regsiters */
-    new_thread->state.rdi = &function;
+    new_thread->state.rdi = function;
     new_thread->state.rsi = argument;
     new_thread->state.fxsave = FPU_INIT;
-    new_thread->state.rbp = (unsigned long) endofstack;
+    new_thread->state.rbp = (unsigned long) (endofstack - 2);
     new_thread->state.rsp = (unsigned long) (endofstack - 2);
 
     printf("new_thread->state.rdi: %p\n", new_thread->state.rdi);
@@ -74,12 +75,6 @@ tid_t lwp_create(lwpfun function, void *argument) {
     sched->admit(new_thread);
 
     return new_thread->tid;
-}
-
-static void lwp_wrap(lwpfun fun, void *arg) {
-    int rval;
-    rval = fun(arg);
-    lwp_exit(rval); 
 }
 
 void lwp_exit(int status) {
@@ -134,8 +129,7 @@ void lwp_yield(void) {
     printf("thread_cur->state.rsp: %lu\n", thread_cur->state.rsp);
     fflush(stdout);
 
-    // nxt->state.rsp = thread_cur->state.rsp;
-    // nxt->state.rbp = thread_cur->state.rbp;
+  
     swap_rfiles(&thread_cur->state, &nxt->state);
 
     printf("yield 3\n");
@@ -167,19 +161,9 @@ void lwp_start(void) {
     thread_main = new_thread;
     thread_cur = new_thread;
 
-
-
-    /* TESTING LINE 
-    printf("start 1\n");
-    fflush(stdout);
-    swap_rfiles(&(thread_cur->state), &(thread_cur->state));
-    printf("start 2\n");
-    fflush(stdout);
-    */ 
-
     /* admit main thread to scheduler */
     sched->admit(new_thread);
-    
+
     /* yield */
     lwp_yield();
 }
