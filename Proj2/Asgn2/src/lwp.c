@@ -38,22 +38,13 @@ tid_t lwp_create(lwpfun function, void *argument) {
     }
     new_thread->stacksize = howbig;
 
-    printf("new  tid: %d\n", new_thread->tid);
-    printf("new_thread->stack: %p\n", new_thread->stack);
-
-
     unsigned long* endofstack;
     endofstack = (unsigned long*)((char*)new_thread->stack + howbig);
-
-    printf("endofstack (before adjustment): %p\n", endofstack);
 
     /* if end of stack isn't div by 16, adjust it by subtracting */
     if ((unsigned long)endofstack % 16 != 0) {
         endofstack = (unsigned long*)((unsigned long)endofstack - ((unsigned long)endofstack % 16));
     }
-
-    printf("endofstack (after adjustment): %p\n", endofstack);
-
 
     /* push function to stack */
     *(endofstack - 1) = (unsigned long) lwp_wrap;
@@ -65,14 +56,20 @@ tid_t lwp_create(lwpfun function, void *argument) {
     new_thread->state.rbp = (unsigned long) (endofstack - 2);
     new_thread->state.rsp = (unsigned long) (endofstack - 2);
 
+    /* admit thread to scheduler */
+    sched->admit(new_thread);
+
+    /* for debugging */
+    /* 
+    printf("new  tid: %d\n", new_thread->tid);
+    printf("new_thread->stack: %p\n", new_thread->stack);
+    printf("endofstack (after adjustment): %p\n", endofstack);
     printf("new_thread->state.rdi: %p\n", new_thread->state.rdi);
     printf("new_thread->state.rsi: %p\n", new_thread->state.rsi);
     printf("new_thread->state.rbp: %lu\n", new_thread->state.rbp);
     printf("new_thread->state.rsp: %lu\n\n\n", new_thread->state.rsp);
     fflush(stdout);
-
-    /* admit thread to scheduler */
-    sched->admit(new_thread);
+    */
 
     return new_thread->tid;
 }
@@ -88,26 +85,7 @@ tid_t lwp_gettid(void) {
     return res;
 }
 
-void lwp_test(void) {
-    printf("YOOO in lwp_test\n");
-    fflush(stdout);
-    
-    printf("sched length: %d\n", sched->qlen());
-
-    int i;
-    thread nxt;
-    for (i = 0; i < 10; i++) {
-        nxt = sched->next();
-        printf("next tid: %d \t rsi: %lu \t rsp: %lu \n", nxt->tid, nxt->state.rsi, nxt->state.rsp);
-        fflush(stdout);
-    }
-    printf("exiting lwp_test!\n\n");
-}
-
 void lwp_yield(void) {
-
-    printf("yield 0 \n");
-    fflush(stdout);
 
     /* check if more threads in scheduler */
     thread nxt;
@@ -117,6 +95,7 @@ void lwp_yield(void) {
         exit(-1);
     }
     
+    /* 
     printf("yield 1\n");
     printf("nxt->state.rdi: %p\n", nxt->state.rdi);
     printf("nxt->state.rsi: %p\n", nxt->state.rsi);
@@ -128,22 +107,13 @@ void lwp_yield(void) {
     printf("thread_cur->state.rbp: %lu\n", thread_cur->state.rbp);
     printf("thread_cur->state.rsp: %lu\n", thread_cur->state.rsp);
     fflush(stdout);
+    */
 
   
     swap_rfiles(&thread_cur->state, &nxt->state);
-
-    printf("yield 3\n");
-    fflush(stdout);
-
-    /* should return to next's LWP's function */
-    /* return; */ 
-    pause(20);
 }
 
 void lwp_start(void) {
-
-    printf("start 0\n");
-    fflush(stdout);
 
     /* allocate LWP context (not stack though) for original main thread */
     thread new_thread = (thread) malloc(sizeof(new_thread));
@@ -172,4 +142,21 @@ tid_t lwp_wait(int *in) {
     tid_t res; 
     res = 10;
     return res;
+}
+
+
+void lwp_test(void) {
+    printf("Enterting in lwp_test\n");
+    fflush(stdout);
+    
+    printf("sched length: %d\n", sched->qlen());
+
+    int i;
+    thread nxt;
+    for (i = 0; i < 10; i++) {
+        nxt = sched->next();
+        printf("next tid: %d \t rsi: %lu \t rsp: %lu \n", nxt->tid, nxt->state.rsi, nxt->state.rsp);
+        fflush(stdout);
+    }
+    printf("exiting lwp_test!\n\n");
 }

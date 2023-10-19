@@ -58,11 +58,6 @@ int main(int argc, char *argv[]){
   for(i=1;i<=5;i++) {
     lwp_create((lwpfun)indentnum,(void*)i);
   }
-
-  printf("got here\n");
-  // lwp_test();
-
-  
   
   lwp_start();
 
