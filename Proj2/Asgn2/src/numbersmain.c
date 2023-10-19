@@ -60,10 +60,10 @@ int main(int argc, char *argv[]){
   }
 
   printf("got here\n");
-  lwp_test();
+  // lwp_test();
 
   
-  /* 
+  
   lwp_start();
 
   for(i=1;i<=5;i++) {
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]){
 
   printf("Back from LWPS.\n");
   lwp_exit(0);
-  */
+  
 
   return 0;
 }

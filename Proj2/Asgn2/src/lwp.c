@@ -24,7 +24,7 @@ tid_t lwp_create(lwpfun function, void *argument) {
     tid_counter++; 
 
     /* for now allocate just a bit of bytes for testing */
-    int howbig = 640;
+    int howbig = 2 * 1024 * 1024; 
 
     new_thread->stack = mmap(NULL, howbig, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
     if (new_thread->stack == MAP_FAILED) {
@@ -33,11 +33,15 @@ tid_t lwp_create(lwpfun function, void *argument) {
     }
     new_thread->stacksize = howbig;
 
+    printf("new  tid: %d\n", new_thread->tid);
     printf("new_thread->stack: %p\n", new_thread->stack); // Print new_thread->stack value
 
 
     unsigned long* endofstack;
-    endofstack = new_thread->stack + howbig; 
+    // endofstack = new_thread->stack + howbig; 
+    endofstack = (unsigned long*)((char*)new_thread->stack + howbig);
+
+
 
     printf("endofstack (before adjustment): %p\n", endofstack); // Print endofstack value before adjustment
 
@@ -60,7 +64,6 @@ tid_t lwp_create(lwpfun function, void *argument) {
     new_thread->state.rbp = (unsigned long) endofstack;
     new_thread->state.rsp = (unsigned long) (endofstack - 2);
 
-    printf("new  tid: %d\n", new_thread->tid);
     printf("new_thread->state.rdi: %p\n", new_thread->state.rdi);
     printf("new_thread->state.rsi: %p\n", new_thread->state.rsi);
     printf("new_thread->state.rbp: %lu\n", new_thread->state.rbp);
@@ -108,7 +111,7 @@ void lwp_test(void) {
 
 void lwp_yield(void) {
 
-    printf("SHIET 0 \n");
+    printf("yield 0 \n");
     fflush(stdout);
 
     /* check if more threads in scheduler */
@@ -119,16 +122,23 @@ void lwp_yield(void) {
         exit(-1);
     }
     
-    printf("SHIET\n");
+    printf("yield 1\n");
     printf("nxt->state.rdi: %p\n", nxt->state.rdi);
     printf("nxt->state.rsi: %p\n", nxt->state.rsi);
     printf("nxt->state.rbp: %lu\n", nxt->state.rbp);
     printf("nxt->state.rsp: %lu\n", nxt->state.rsp);
+    printf("yield 2\n");
+    printf("thread_cur->state.rdi: %p\n", thread_cur->state.rdi);
+    printf("thread_cur->state.rsi: %p\n", thread_cur->state.rsi);
+    printf("thread_cur->state.rbp: %lu\n", thread_cur->state.rbp);
+    printf("thread_cur->state.rsp: %lu\n", thread_cur->state.rsp);
     fflush(stdout);
 
-    swap_rfiles(&(thread_cur->state), &(nxt->state));
+    // nxt->state.rsp = thread_cur->state.rsp;
+    // nxt->state.rbp = thread_cur->state.rbp;
+    swap_rfiles(&thread_cur->state, &nxt->state);
 
-    printf("SHIET 2\n");
+    printf("yield 3\n");
     fflush(stdout);
 
     /* should return to next's LWP's function */
@@ -159,13 +169,13 @@ void lwp_start(void) {
 
 
 
-    /* TESTING LINE */
+    /* TESTING LINE 
     printf("start 1\n");
     fflush(stdout);
     swap_rfiles(&(thread_cur->state), &(thread_cur->state));
     printf("start 2\n");
     fflush(stdout);
-
+    */ 
 
     /* admit main thread to scheduler */
     sched->admit(new_thread);
