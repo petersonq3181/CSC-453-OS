@@ -59,9 +59,12 @@ int main(int argc, char *argv[]){
     lwp_create((lwpfun)indentnum,(void*)i);
   }
 
+  printf("got here\n");
+  /* lwp_test(); */
+
+  
   lwp_start();
 
-  /* wait for the other LWPs */
   for(i=1;i<=5;i++) {
     int status,num;
     tid_t t;
@@ -72,6 +75,8 @@ int main(int argc, char *argv[]){
 
   printf("Back from LWPS.\n");
   lwp_exit(0);
+  
+
   return 0;
 }
 
