@@ -14,7 +14,7 @@ thread thread_cur = NULL;
 tid_t lwp_create(lwpfun function, void *argument) {
 
     /* malloc for the thread context struct */
-    thread new_thread = (thread) malloc(sizeof(new_thread));
+    thread new_thread = (thread) malloc(sizeof(*new_thread));
     if (!new_thread) {
         perror("malloc failed to allocate new thread context\n");
         return -1;
@@ -60,10 +60,12 @@ tid_t lwp_create(lwpfun function, void *argument) {
     new_thread->state.rbp = (unsigned long) endofstack;
     new_thread->state.rsp = (unsigned long) (endofstack - 2);
 
+    printf("new  tid: %d\n", new_thread->tid);
     printf("new_thread->state.rdi: %p\n", new_thread->state.rdi);
     printf("new_thread->state.rsi: %p\n", new_thread->state.rsi);
     printf("new_thread->state.rbp: %lu\n", new_thread->state.rbp);
     printf("new_thread->state.rsp: %lu\n\n\n", new_thread->state.rsp);
+    fflush(stdout);
 
     /* admit thread to scheduler */
     sched->admit(new_thread);
@@ -96,18 +98,12 @@ void lwp_test(void) {
 
     int i;
     thread nxt;
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 10; i++) {
         nxt = sched->next();
-        printf("next tid: %d\n", nxt->tid);
+        printf("next tid: %d \t rsi: %lu \t rsp: %lu \n", nxt->tid, nxt->state.rsi, nxt->state.rsp);
+        fflush(stdout);
     }
-    printf("i: %d\n", i);
-
-    for (i = 0; i < 20; i++) {
-        printf("in this loop\n");
-        nxt = sched->next();
-        printf("next tid: %d\n", nxt->tid);
-    }
-    
+    printf("exiting lwp_test!\n\n");
 }
 
 void lwp_yield(void) {
