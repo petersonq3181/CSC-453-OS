@@ -96,11 +96,17 @@ void lwp_test(void) {
 
     int i;
     thread nxt;
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 6; i++) {
         nxt = sched->next();
         printf("next tid: %d\n", nxt->tid);
     }
     printf("i: %d\n", i);
+
+    for (i = 0; i < 20; i++) {
+        printf("in this loop\n");
+        nxt = sched->next();
+        printf("next tid: %d\n", nxt->tid);
+    }
     
 }
 

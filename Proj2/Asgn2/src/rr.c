@@ -8,108 +8,89 @@ typedef struct Node {
     struct Node* next;
 } Node;
 
-static Node* head = NULL;
-static Node* tail = NULL;
-
-/* function to initialize scheduler (can be NULL) */
-static void fifo_scheduler_init(void) {
-    head = tail = NULL;
-}
-
-/* function to shutdown scheduler and free memory (can be NULL) */
-static void fifo_scheduler_shutdown(void) {
-    Node* temp;
-    while (head != NULL) {
-        temp = head;
-        head = head->next;
-        free(temp->t); 
-        free(temp);    
-    }
-    tail = NULL;
-}
+Node* head = NULL;
 
 /* function to add a thread to the scheduler */
-static void fifo_scheduler_admit(thread new_thread) {
+void rr_admit(thread new_thread) {
     Node* new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
         exit(EXIT_FAILURE);
     }
 
     new_node->t = new_thread;
-    new_node->next = NULL;
 
-    if (tail == NULL) {
-        head = tail = new_node;
+    if (head == NULL) {
+        head = new_node;
+        new_node->next = head; // Pointing to itself
     } else {
-        tail->next = new_node;
-        tail = new_node;
+        Node* temp = head;
+        while (temp->next != head) {
+            temp = temp->next;
+        }
+        temp->next = new_node;
+        new_node->next = head; // Closing the circle
     }
 }
 
 /* function to remove a specific thread from the scheduler */
-static void fifo_scheduler_remove(thread victim) {
+void rr_remove(thread victim) {
+    if (head == NULL) return;
+
     Node* temp = head;
     Node* prev = NULL;
 
-    while (temp != NULL && temp->t != victim) {
+    do {
+        if (temp->t == victim) break;
         prev = temp;
         temp = temp->next;
-    }
+    } while (temp != head);
 
-    if (temp == NULL) {
-        return;
-    }
+    if (temp->t != victim) return; // Victim not found
 
-    if (prev == NULL) {
-        head = temp->next;
-        if (head == NULL) {
-            tail = NULL;
+    if (prev == NULL) { // Removing head
+        if (temp->next == head) {
+            head = NULL; // Only one node in the list
+        } else {
+            Node* last = head;
+            while (last->next != head) {
+                last = last->next;
+            }
+            head = head->next;
+            last->next = head;
         }
     } else {
         prev->next = temp->next;
-        if (temp->next == NULL) {
-            tail = prev;
-        }
     }
+
     free(temp->t);
     free(temp);
 }
 
 /* function to select the next thread to be scheduled */
-static thread fifo_scheduler_next(void) {
+thread rr_next(void) {
     if (head == NULL) {
         return NULL;
     }
 
-    Node* temp = head;
-    thread t = temp->t;
-    head = head->next;
+    thread t = head->t;
+    head = head->next; // Move to the next thread in the circle
 
-    if (head == NULL) {
-        tail = NULL;
-    }
-    free(temp);
     return t;
 }
 
 /* function to return the number of threads in the scheduler */
-static int fifo_scheduler_qlen(void) {
+int rr_qlen(void) {
+    if (head == NULL) return 0;
+
     int count = 0;
     Node* temp = head;
-    while (temp != NULL) {
+    do {
         count++;
         temp = temp->next;
-    }
+    } while (temp != head);
+
     return count;
 }
 
-static struct scheduler fifo_scheduler = {
-    .init = fifo_scheduler_init,
-    .shutdown = fifo_scheduler_shutdown,
-    .admit = fifo_scheduler_admit,
-    .remove = fifo_scheduler_remove,
-    .next = fifo_scheduler_next,
-    .qlen = fifo_scheduler_qlen
-};
-
-scheduler sched = &fifo_scheduler;
+struct scheduler rr_publish = {NULL, NULL, rr_admit, rr_remove, rr_next, rr_qlen}; 
+scheduler sched = &rr_publish;
