@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/mman.h>
@@ -152,19 +151,36 @@ tid_t lwp_create(lwpfun function, void *argument) {
 }
 
 void lwp_exit(int status) {
-    /* 
-    int low8bits = status & 0xFF;
-
     if (!isEmpty(&waiting)) {
         thread w = dequeue(&waiting);
         w->exited = thread_cur->tid;
         sched->admit(w);
-    } else { 
-        sched->remove()
+    } else {
+        enqueue(&terminated, thread_cur);
+        sched->remove(thread_cur);
     }
-    */
 
-    
+    /* record termination status of caller */
+    int low8bits = status & 0xFF;
+
+    lwp_yield();
+}
+
+tid_t lwp_wait(int *in) {
+    if (!isEmpty(&terminated)) {
+        thread w = dequeue(&terminated);
+        tid_t ret = w->tid;
+
+        /* deallocate resources */
+        free(w);
+        w = NULL;
+
+        return ret;
+    }
+
+    sched->remove(thread_cur);
+    enqueue(&waiting, thread_cur);
+    lwp_yield();
 }
 
 tid_t lwp_gettid(void) {
@@ -220,10 +236,7 @@ void lwp_yield(void) {
     fflush(stdout);
     */
 
-  
     swap_rfiles(&thread_cur->state, &nxt->state);
-
-    thread_cur = nxt;
 }
 
 void lwp_start(void) {
@@ -253,16 +266,6 @@ void lwp_start(void) {
 
     /* yield */
     lwp_yield();
-}
-
-tid_t lwp_wait(int *in) {
-    /* wait sys call waits for children -- same thing here */
-    /* when a thread exists add it to a global list of terminated processes */
-    /* here it will check that list and block until it pops one from there */
-    /* do not have an infinite loop */
-    tid_t res; 
-    res = 10;
-    return res;
 }
 
 
@@ -352,4 +355,40 @@ void lwp_test4(void) {
 
     sched->remove(result_thread);
     printf("Number of threads after removing: %d\n", sched->qlen());
+}
+
+void print_thread(thread t) {
+    if (t) {
+        printf("Thread TID: %d\n", t->tid);
+    } else {
+        printf("NULL Thread\n");
+    }
+}
+
+void print_queue(Queue* q, const char* queue_name) {
+    printf("---- %s Queue ----\n", queue_name);
+    if (!q || !q->front) {
+        printf("(Empty)\n");
+        return;
+    }
+
+    Node* temp = q->front;
+    while (temp) {
+        print_thread(temp->data);
+        temp = temp->next;
+    }
+}
+
+void print_thread_state() {
+    printf("========== Thread State ==========\n");
+
+    printf("---- Current Thread ----\n");
+    print_thread(thread_cur);
+
+    print_queue(&waiting, "Waiting");
+
+    print_queue(&terminated, "Terminated");
+
+    printf("==================================\n");
+    fflush(stdout);
 }
