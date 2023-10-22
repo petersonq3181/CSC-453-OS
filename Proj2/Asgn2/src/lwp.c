@@ -4,15 +4,11 @@
 #include "lwp.h"
 #include "schedulers.h"
 
-int init_loop = 1;
 tid_t tid_counter = 1;
-thread thread_main = NULL;
+thread thread_cur = NULL;
 
 /* for now allocate just a bit of bytes for testing */
 int howbig = 2 * 1024 * 1024; 
-
-tid_t tid_cur = 0;
-thread thread_cur = NULL;
 
 
 /* ----- Node defs and funcs for FIFO queues of threads */
@@ -39,7 +35,7 @@ void enqueue(Queue* q, thread item) {
     newNode->data = item;
     newNode->next = NULL;
 
-    if(q->rear == NULL) {
+    if (q->rear == NULL) {
         q->front = q->rear = newNode;
         return;
     }
@@ -49,7 +45,7 @@ void enqueue(Queue* q, thread item) {
 }
 
 thread dequeue(Queue* q) {
-    if(q->front == NULL) {
+    if (q->front == NULL) {
         printf("Queue is empty.\n");
         exit(1);
     }
@@ -59,7 +55,7 @@ thread dequeue(Queue* q) {
 
     q->front = q->front->next;
 
-    if(q->front == NULL) {
+    if (q->front == NULL) {
         q->rear = NULL;
     }
 
@@ -68,7 +64,7 @@ thread dequeue(Queue* q) {
 }
 
 thread peek(Queue* q) {
-    if(q->front == NULL) {
+    if (q->front == NULL) {
         printf("Queue is empty.\n");
         exit(1);
     }
@@ -147,31 +143,51 @@ tid_t lwp_create(lwpfun function, void *argument) {
     printf("new_thread->state.rsp: %lu\n\n\n", new_thread->state.rsp);
     fflush(stdout);
     */
-
+    
     return new_thread->tid;
 }
 
 void lwp_exit(int status) {
     if (!isEmpty(&waiting)) {
         thread w = dequeue(&waiting);
-        w->exited = thread_cur->tid;
+        w->exited = thread_cur;
         sched->admit(w);
     } else {
+
+        // printf("here in exit\n");
+        // printf("thread_cur: \n");
+        // print_lwp(thread_cur);
+
         enqueue(&terminated, thread_cur);
+
+
+        // printf("here still in exit\n");
+        // printf("thread_cur: \n");
+
+        /* FIX: added for debugging purposes, strangely things are wokring better */
+        thread g = dequeue(&terminated);
+
+        // print_lwp(g);
+
+
         sched->remove(thread_cur);
     }
 
     /* record termination status of caller */
     int low8bits = status & 0xFF;
-    MKTERMSTAT(low8bits, thread_cur->status);
+    thread_cur->status = MKTERMSTAT(low8bits, thread_cur->status);
+    /* sets calling threads status to this new term status? */
 
     lwp_yield();
 }
 
-tid_t lwp_wait(int *in) {
+tid_t lwp_wait(int *status) {
     if (sched->qlen() < 2) {
         return NO_THREAD;
     }
+
+    // printf("in wait got here\n");
+    // print_thread_cur();
 
     if (!isEmpty(&terminated)) {
         thread w = dequeue(&terminated);
@@ -179,6 +195,11 @@ tid_t lwp_wait(int *in) {
 
         /* deallocate resources  */
         if (!(w->stack == NULL)) {
+
+            // printf("here in wait\n");
+            // print_lwp(w);
+            // fflush(stdout);
+
             if (munmap(w->stack, howbig) == -1) {
                 perror("munmap failed\n");
                 exit(EXIT_FAILURE);
@@ -192,6 +213,9 @@ tid_t lwp_wait(int *in) {
 
     sched->remove(thread_cur);
     enqueue(&waiting, thread_cur);
+
+    lwp_yield();
+
     return thread_cur->tid;
 }
 
@@ -251,6 +275,9 @@ void lwp_yield(void) {
     thread tmp = thread_cur;
     thread_cur = nxt;
 
+    // printf("in yield got here\n");
+    // print_thread_cur();
+
     swap_rfiles(&tmp->state, &nxt->state);
 }
 
@@ -270,10 +297,6 @@ void lwp_start(void) {
     new_thread->tid = tid_counter;
     tid_counter++; 
 
-    /* store in global to keep easy track of main thread
-    * and set it to the current thread 
-    */
-    thread_main = new_thread;
     thread_cur = new_thread;
 
     /* admit main thread to scheduler */
@@ -417,5 +440,18 @@ void print_thread_state() {
     print_queue(&terminated, "Terminated");
 
     printf("==================================\n");
+    fflush(stdout);
+}
+
+void print_thread_cur() {
+    printf("thread_cur tid: %d\n", thread_cur->tid);
+    fflush(stdout);
+}
+
+void print_lwp(thread t) {
+    printf("tid: %d\n", t->tid);
+    printf("thread->stack: %p\n", t->stack);
+    printf("thread->state.rdi: %p\n", t->state.rdi);
+    printf("thread->state.rsi: %p\n", t->state.rsi);
     fflush(stdout);
 }
