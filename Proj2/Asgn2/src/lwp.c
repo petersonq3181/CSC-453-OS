@@ -4,8 +4,12 @@
 #include "lwp.h"
 #include "schedulers.h"
 
+int init_loop = 1;
 tid_t tid_counter = 1;
 thread thread_main = NULL;
+
+/* for now allocate just a bit of bytes for testing */
+int howbig = 2 * 1024 * 1024; 
 
 tid_t tid_cur = 0;
 thread thread_cur = NULL;
@@ -104,9 +108,6 @@ tid_t lwp_create(lwpfun function, void *argument) {
     new_thread->tid = tid_counter;
     tid_counter++; 
 
-    /* for now allocate just a bit of bytes for testing */
-    int howbig = 2 * 1024 * 1024; 
-
     new_thread->stack = mmap(NULL, howbig, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
     if (new_thread->stack == MAP_FAILED) {
         perror("mmap failed");
@@ -162,25 +163,36 @@ void lwp_exit(int status) {
 
     /* record termination status of caller */
     int low8bits = status & 0xFF;
+    MKTERMSTAT(low8bits, thread_cur->status);
 
     lwp_yield();
 }
 
 tid_t lwp_wait(int *in) {
+    if (sched->qlen() < 2) {
+        return NO_THREAD;
+    }
+
     if (!isEmpty(&terminated)) {
         thread w = dequeue(&terminated);
         tid_t ret = w->tid;
 
-        /* deallocate resources */
+        /* deallocate resources  */
+        if (!(w->stack == NULL)) {
+            if (munmap(w->stack, howbig) == -1) {
+                perror("munmap failed\n");
+                exit(EXIT_FAILURE);
+            }   
+        }
         free(w);
         w = NULL;
-
+        
         return ret;
     }
 
     sched->remove(thread_cur);
     enqueue(&waiting, thread_cur);
-    lwp_yield();
+    return thread_cur->tid;
 }
 
 tid_t lwp_gettid(void) {
@@ -218,7 +230,7 @@ void lwp_yield(void) {
     thread nxt;
     nxt = sched->next(); 
     if (nxt == NULL) {
-        /* ?? need to fix the exit status */
+        /* need to fix the exit status */
         exit(-1);
     }
     
@@ -236,7 +248,10 @@ void lwp_yield(void) {
     fflush(stdout);
     */
 
-    swap_rfiles(&thread_cur->state, &nxt->state);
+    thread tmp = thread_cur;
+    thread_cur = nxt;
+
+    swap_rfiles(&tmp->state, &nxt->state);
 }
 
 void lwp_start(void) {
@@ -246,7 +261,7 @@ void lwp_start(void) {
     initializeQueue(&terminated);
 
     /* allocate LWP context (not stack though) for original main thread */
-    thread new_thread = (thread) malloc(sizeof(new_thread));
+    thread new_thread = (thread) malloc(sizeof(*new_thread));
     if (!new_thread) {
         perror("malloc failed to allocate new thread context\n");
         return;
@@ -290,6 +305,18 @@ void lwp_test(void) {
 void lwp_test2(void) {
     printf("in lwp_test2\n");
     thread nxt;
+    nxt = sched->next(); 
+    printf("nxt: %d\n", nxt->tid);
+    if (nxt == NULL) {
+        /* ?? need to fix the exit status */
+        exit(-1);
+    }
+    nxt = sched->next(); 
+    printf("nxt: %d\n", nxt->tid);
+    if (nxt == NULL) {
+        /* ?? need to fix the exit status */
+        exit(-1);
+    }
     nxt = sched->next(); 
     printf("nxt: %d\n", nxt->tid);
     if (nxt == NULL) {
