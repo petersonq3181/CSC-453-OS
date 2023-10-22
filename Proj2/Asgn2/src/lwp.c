@@ -153,30 +153,20 @@ void lwp_exit(int status) {
         w->exited = thread_cur;
         sched->admit(w);
     } else {
-
-        // printf("here in exit\n");
-        // printf("thread_cur: \n");
-        // print_lwp(thread_cur);
-
         enqueue(&terminated, thread_cur);
 
-
-        // printf("here still in exit\n");
-        // printf("thread_cur: \n");
-
-        /* FIX: added for debugging purposes, strangely things are wokring better */
+        /* added for debugging purposes, strangely things are wokring better */
         thread g = dequeue(&terminated);
-
-        // print_lwp(g);
-
 
         sched->remove(thread_cur);
     }
 
+    
     /* record termination status of caller */
     int low8bits = status & 0xFF;
     thread_cur->status = MKTERMSTAT(low8bits, thread_cur->status);
     /* sets calling threads status to this new term status? */
+
 
     lwp_yield();
 }
@@ -186,20 +176,12 @@ tid_t lwp_wait(int *status) {
         return NO_THREAD;
     }
 
-    // printf("in wait got here\n");
-    // print_thread_cur();
-
     if (!isEmpty(&terminated)) {
         thread w = dequeue(&terminated);
         tid_t ret = w->tid;
 
         /* deallocate resources  */
         if (!(w->stack == NULL)) {
-
-            // printf("here in wait\n");
-            // print_lwp(w);
-            // fflush(stdout);
-
             if (munmap(w->stack, howbig) == -1) {
                 perror("munmap failed\n");
                 exit(EXIT_FAILURE);
@@ -215,6 +197,8 @@ tid_t lwp_wait(int *status) {
     enqueue(&waiting, thread_cur);
 
     lwp_yield();
+
+    *status = thread_cur->status;
 
     return thread_cur->tid;
 }
