@@ -221,10 +221,6 @@ void lwp_exit(int status) {
         sched->admit(w);
     } else {
         enqueue(&terminated, thread_cur);
-
-        /* added for debugging purposes, strangely things are wokring better */
-        /* thread g = dequeue(&terminated); */ 
-
         sched->remove(thread_cur);
     }
     
@@ -240,6 +236,8 @@ tid_t lwp_wait(int *status) {
     if (sched->qlen() < 2) {
         return NO_THREAD;
     }
+
+    lwp_yield();
 
     if (!isEmpty(&terminated)) {
         thread w = dequeue(&terminated);
@@ -261,9 +259,9 @@ tid_t lwp_wait(int *status) {
     sched->remove(thread_cur);
     enqueue(&waiting, thread_cur);
 
-    lwp_yield();
-
     *status = thread_cur->status;
+
+    
 
     return thread_cur->tid;
 }

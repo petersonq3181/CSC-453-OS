@@ -54,16 +54,14 @@ int main(int argc, char *argv[]){
 
   printf("Launching LWPS\n");
 
-  // test_queue();
-
   /* spawn a number of individual LWPs */
-  
   for(i=1;i<=5;i++) {
     lwp_create((lwpfun)indentnum,(void*)i);
   }
 
   lwp_start();
 
+  /* wait for the other LWPs */
   for(i=1;i<=5;i++) {
     int status,num;
     tid_t t;
@@ -74,9 +72,6 @@ int main(int argc, char *argv[]){
 
   printf("Back from LWPS.\n");
   lwp_exit(0);
-  
-
-
   return 0;
 }
 
@@ -88,7 +83,6 @@ static void indentnum(void *num) {
   int howfar;
 
   howfar=(long)num;              /* interpret num as an integer */
-
   for(i=0;i<howfar;i++){
     printf("%*d\n",howfar*5,howfar);
     lwp_yield();                /* let another have a turn */
