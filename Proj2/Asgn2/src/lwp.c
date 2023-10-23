@@ -6,7 +6,6 @@
 
 tid_t tid_counter = 1;
 thread thread_cur = NULL;
-int first_yield = 1;
 
 /* for now allocate just a bit of bytes for testing */
 int howbig = 2 * 1024 * 1024; 
@@ -96,21 +95,18 @@ void test_queue() {
     thread new_thread_a = (thread) malloc(sizeof(*new_thread_a));
     if (!new_thread_a) {
         perror("malloc failed to allocate new thread context\n");
-        return -1;
     }
     new_thread_a->tid = 11;
 
     thread new_thread_b = (thread) malloc(sizeof(*new_thread_b));
     if (!new_thread_b) {
         perror("malloc failed to allocate new thread context\n");
-        return -1;
     }
     new_thread_b->tid = 12;
 
     thread new_thread_c = (thread) malloc(sizeof(*new_thread_c));
     if (!new_thread_c) {
         perror("malloc failed to allocate new thread context\n");
-        return -1;
     }
     new_thread_c->tid = 13;
 
@@ -227,7 +223,7 @@ void lwp_exit(int status) {
         enqueue(&terminated, thread_cur);
 
         /* added for debugging purposes, strangely things are wokring better */
-        thread g = dequeue(&terminated);
+        /* thread g = dequeue(&terminated); */ 
 
         sched->remove(thread_cur);
     }
