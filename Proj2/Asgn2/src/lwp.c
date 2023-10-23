@@ -6,6 +6,7 @@
 
 tid_t tid_counter = 1;
 thread thread_cur = NULL;
+int first_yield = 1;
 
 /* for now allocate just a bit of bytes for testing */
 int howbig = 2 * 1024 * 1024; 
@@ -75,12 +76,82 @@ int isEmpty(Queue* q) {
     return q->front == NULL;
 }
 
-void printContext(thread c) {
-    if (c == NULL) {
-        printf("NULL thread\n");
+void printQueue(Queue* q) {
+    if (isEmpty(q)) {
+        printf("Queue is empty.\n\n");
         return;
     }
-    printf("TID: %d\n", c->tid);
+
+    Node* currentNode = q->front;
+    while (currentNode != NULL) {
+        print_lwp(currentNode->data);
+        currentNode = currentNode->next;
+    }
+    printf("\n\n");
+}
+
+Queue tq; 
+void test_queue() {
+    /* init dummy LWPs */
+    thread new_thread_a = (thread) malloc(sizeof(*new_thread_a));
+    if (!new_thread_a) {
+        perror("malloc failed to allocate new thread context\n");
+        return -1;
+    }
+    new_thread_a->tid = 11;
+
+    thread new_thread_b = (thread) malloc(sizeof(*new_thread_b));
+    if (!new_thread_b) {
+        perror("malloc failed to allocate new thread context\n");
+        return -1;
+    }
+    new_thread_b->tid = 12;
+
+    thread new_thread_c = (thread) malloc(sizeof(*new_thread_c));
+    if (!new_thread_c) {
+        perror("malloc failed to allocate new thread context\n");
+        return -1;
+    }
+    new_thread_c->tid = 13;
+
+    /* FIFO queue stuff */
+    initializeQueue(&tq);
+
+    printf("init queue: \n");
+    printQueue(&tq);
+    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
+
+    enqueue(&tq, new_thread_a);
+    printf("queue after pushing thread_a: \n");
+    printQueue(&tq);
+    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
+
+    enqueue(&tq, new_thread_b);
+    enqueue(&tq, new_thread_c);
+    printf("queue after pushing thread_b and thread_c: \n");
+    printQueue(&tq);
+    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
+
+    thread p_a = dequeue(&tq);
+    printf("popped from queue:\n");
+    print_lwp(p_a);
+    printf("\nqueue after popping:\n");
+    printQueue(&tq);
+    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
+
+    thread p_b = dequeue(&tq);
+    printf("popped from queue:\n");
+    print_lwp(p_b);
+    printf("\nqueue after popping:\n");
+    printQueue(&tq);
+    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
+
+    thread p_c = dequeue(&tq);
+    printf("popped from queue:\n");
+    print_lwp(p_c);
+    printf("\nqueue after popping:\n");
+    printQueue(&tq);
+    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
 }
 
 
@@ -160,13 +231,11 @@ void lwp_exit(int status) {
 
         sched->remove(thread_cur);
     }
-
     
     /* record termination status of caller */
     int low8bits = status & 0xFF;
     thread_cur->status = MKTERMSTAT(low8bits, thread_cur->status);
     /* sets calling threads status to this new term status? */
-
 
     lwp_yield();
 }
@@ -256,6 +325,7 @@ void lwp_yield(void) {
     fflush(stdout);
     */
 
+
     thread tmp = thread_cur;
     thread_cur = nxt;
 
@@ -293,86 +363,6 @@ void lwp_start(void) {
 
 
 /* ----- Additional self-test functions */
-void lwp_test(void) {
-    printf("Enterting in lwp_test\n");
-    fflush(stdout);
-    
-    printf("sched length: %d\n", sched->qlen());
-
-    int i;
-    thread nxt;
-    for (i = 0; i < 10; i++) {
-        nxt = sched->next();
-        printf("next tid: %d \t rsi: %lu \t rsp: %lu \n", nxt->tid, nxt->state.rsi, nxt->state.rsp);
-        fflush(stdout);
-    }
-    printf("exiting lwp_test!\n\n");
-}
-
-void lwp_test2(void) {
-    printf("in lwp_test2\n");
-    thread nxt;
-    nxt = sched->next(); 
-    printf("nxt: %d\n", nxt->tid);
-    if (nxt == NULL) {
-        /* ?? need to fix the exit status */
-        exit(-1);
-    }
-    nxt = sched->next(); 
-    printf("nxt: %d\n", nxt->tid);
-    if (nxt == NULL) {
-        /* ?? need to fix the exit status */
-        exit(-1);
-    }
-    nxt = sched->next(); 
-    printf("nxt: %d\n", nxt->tid);
-    if (nxt == NULL) {
-        /* ?? need to fix the exit status */
-        exit(-1);
-    }
-    printf("got here in lwp_test2\n");
-}
-
-void lwp_test3(void) {
-    Queue queue1;
-    Queue queue2;
-
-    initializeQueue(&queue1);
-    initializeQueue(&queue2);
-
-    // Sample context data for testing
-    thread t1 = (thread) malloc(sizeof(context));
-    t1->tid = 1;
-
-    thread t2 = (thread) malloc(sizeof(context));
-    t2->tid = 2;
-
-    thread t3 = (thread) malloc(sizeof(context));
-    t3->tid = 3;
-
-    enqueue(&queue1, t1);
-    enqueue(&queue1, t2);
-    enqueue(&queue2, t3);
-
-    printf("Peek at front of queue1:\n");
-    printContext(peek(&queue1));
-
-    printf("\nDequeuing from queue1:\n");
-    while (!isEmpty(&queue1)) {
-        thread t = dequeue(&queue1);
-        printContext(t);
-        free(t);  // Since each node holds a pointer to a context, we need to free the context memory when done.
-    }
-
-    printf("\nDequeuing from queue2:\n");
-    while (!isEmpty(&queue2)) {
-        thread t = dequeue(&queue2);
-        printContext(t);
-        free(t);  // Free the context memory.
-    }
-
-    return 0;
-}
 
 void lwp_test4(void) {
     printf("Number of threads in the scheduler: %d\n", sched->qlen());
@@ -391,41 +381,6 @@ void lwp_test4(void) {
     printf("Number of threads after removing: %d\n", sched->qlen());
 }
 
-void print_thread(thread t) {
-    if (t) {
-        printf("Thread TID: %d\n", t->tid);
-    } else {
-        printf("NULL Thread\n");
-    }
-}
-
-void print_queue(Queue* q, const char* queue_name) {
-    printf("---- %s Queue ----\n", queue_name);
-    if (!q || !q->front) {
-        printf("(Empty)\n");
-        return;
-    }
-
-    Node* temp = q->front;
-    while (temp) {
-        print_thread(temp->data);
-        temp = temp->next;
-    }
-}
-
-void print_thread_state() {
-    printf("========== Thread State ==========\n");
-
-    printf("---- Current Thread ----\n");
-    print_thread(thread_cur);
-
-    print_queue(&waiting, "Waiting");
-
-    print_queue(&terminated, "Terminated");
-
-    printf("==================================\n");
-    fflush(stdout);
-}
 
 void print_thread_cur() {
     printf("thread_cur tid: %d\n", thread_cur->tid);
@@ -434,6 +389,7 @@ void print_thread_cur() {
 
 void print_lwp(thread t) {
     printf("tid: %d\n", t->tid);
+    printf("address pointed by t: %p\n", t);
     printf("thread->stack: %p\n", t->stack);
     printf("thread->state.rdi: %p\n", t->state.rdi);
     printf("thread->state.rsi: %p\n", t->state.rsi);

@@ -45,11 +45,11 @@ void rr_remove(thread victim) {
         temp = temp->next;
     } while (temp != head);
 
-    if (temp->t != victim) return; // Victim not found
+    if (temp->t != victim) return;
 
-    if (prev == NULL) { // Removing head
+    if (prev == NULL) {
         if (temp->next == head) {
-            head = NULL; // Only one node in the list
+            head = NULL;
         } else {
             Node* last = head;
             while (last->next != head) {
@@ -62,8 +62,10 @@ void rr_remove(thread victim) {
         prev->next = temp->next;
     }
 
+    /* 
     free(temp->t);
     free(temp);
+    */
 }
 
 /* function to select the next thread to be scheduled */
