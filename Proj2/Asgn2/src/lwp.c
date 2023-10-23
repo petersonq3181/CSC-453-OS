@@ -188,16 +188,21 @@ void lwp_exit(int status) {
 }
 
 tid_t lwp_wait(int *status) {
-    if (status == NULL) {
-        sched->remove(thread_cur);
-        enqueue(&terminated, thread_cur);
-        lwp_yield();
-    }
-
+   
     if (sched->qlen() < 2) {
         freeQueueResources(&terminated);
         return NO_THREAD;
     }
+
+    if (status == NULL) {
+        int ret = thread_cur->tid;
+        sched->remove(thread_cur);
+        enqueue(&terminated, thread_cur);
+        lwp_yield();
+        fflush(stdout);
+        return ret;
+    }
+
 
     lwp_yield();
 
