@@ -75,6 +75,22 @@ int isEmpty(Queue* q) {
     return q->front == NULL;
 }
 
+void freeQueueResources(Queue* q) {
+    while (!isEmpty(q)) {
+        thread w = dequeue(q);
+
+        /* deallocate resources  */
+        if (!(w->stack == NULL)) {
+            if (munmap(w->stack, howbig) == -1) {
+                perror("munmap failed\n");
+                exit(EXIT_FAILURE);
+            }   
+        }
+        free(w);
+        w = NULL;
+    }
+}
+
 void printQueue(Queue* q) {
     if (isEmpty(q)) {
         printf("Queue is empty.\n\n");
@@ -88,68 +104,6 @@ void printQueue(Queue* q) {
     }
     printf("\n\n");
 }
-
-Queue tq; 
-void test_queue() {
-    /* init dummy LWPs */
-    thread new_thread_a = (thread) malloc(sizeof(*new_thread_a));
-    if (!new_thread_a) {
-        perror("malloc failed to allocate new thread context\n");
-    }
-    new_thread_a->tid = 11;
-
-    thread new_thread_b = (thread) malloc(sizeof(*new_thread_b));
-    if (!new_thread_b) {
-        perror("malloc failed to allocate new thread context\n");
-    }
-    new_thread_b->tid = 12;
-
-    thread new_thread_c = (thread) malloc(sizeof(*new_thread_c));
-    if (!new_thread_c) {
-        perror("malloc failed to allocate new thread context\n");
-    }
-    new_thread_c->tid = 13;
-
-    /* FIFO queue stuff */
-    initializeQueue(&tq);
-
-    printf("init queue: \n");
-    printQueue(&tq);
-    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
-
-    enqueue(&tq, new_thread_a);
-    printf("queue after pushing thread_a: \n");
-    printQueue(&tq);
-    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
-
-    enqueue(&tq, new_thread_b);
-    enqueue(&tq, new_thread_c);
-    printf("queue after pushing thread_b and thread_c: \n");
-    printQueue(&tq);
-    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
-
-    thread p_a = dequeue(&tq);
-    printf("popped from queue:\n");
-    print_lwp(p_a);
-    printf("\nqueue after popping:\n");
-    printQueue(&tq);
-    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
-
-    thread p_b = dequeue(&tq);
-    printf("popped from queue:\n");
-    print_lwp(p_b);
-    printf("\nqueue after popping:\n");
-    printQueue(&tq);
-    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
-
-    thread p_c = dequeue(&tq);
-    printf("popped from queue:\n");
-    print_lwp(p_c);
-    printf("\nqueue after popping:\n");
-    printQueue(&tq);
-    printf("queue is empty? \t\t %d\n", isEmpty(&tq));
-}
-
 
 
 /* ----- main LWP API funcs */
@@ -234,7 +188,9 @@ void lwp_exit(int status) {
 }
 
 tid_t lwp_wait(int *status) {
-    if (sched->qlen() < 2) return NO_THREAD;
+    if (sched->qlen() < 2) {
+        return NO_THREAD;
+    }
 
     lwp_yield();
 
@@ -293,13 +249,16 @@ thread tid2thread(tid_t tid) {
 }
 
 void lwp_yield(void) {
-
-    /* check if more threads in scheduler */
     thread nxt;
     nxt = sched->next(); 
+
+    /* check if more threads in scheduler */
     if (nxt == NULL) {
-        /* need to fix the exit status */
-        exit(-1);
+        freeQueueResources(&waiting);
+        freeQueueResources(&terminated);
+
+        /* if no nxt, terminate the program by calling exit(3) w/ term status of caller */
+        exit(thread_cur->status);
     }
     
     /* 
@@ -316,12 +275,8 @@ void lwp_yield(void) {
     fflush(stdout);
     */
 
-
     thread tmp = thread_cur;
     thread_cur = nxt;
-
-    // printf("in yield got here\n");
-    // print_thread_cur();
 
     swap_rfiles(&tmp->state, &nxt->state);
 }

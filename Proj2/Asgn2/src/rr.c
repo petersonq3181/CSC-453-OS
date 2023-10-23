@@ -61,11 +61,6 @@ void rr_remove(thread victim) {
     } else {
         prev->next = temp->next;
     }
-
-    /* 
-    free(temp->t);
-    free(temp);
-    */
 }
 
 /* function to select the next thread to be scheduled */
