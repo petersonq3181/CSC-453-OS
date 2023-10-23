@@ -189,6 +189,7 @@ void lwp_exit(int status) {
 
 tid_t lwp_wait(int *status) {
     if (sched->qlen() < 2) {
+        freeQueueResources(&terminated);
         return NO_THREAD;
     }
 
@@ -254,9 +255,6 @@ void lwp_yield(void) {
 
     /* check if more threads in scheduler */
     if (nxt == NULL) {
-        freeQueueResources(&waiting);
-        freeQueueResources(&terminated);
-
         /* if no nxt, terminate the program by calling exit(3) w/ term status of caller */
         exit(thread_cur->status);
     }
@@ -296,6 +294,7 @@ void lwp_start(void) {
 
     new_thread->tid = tid_counter;
     tid_counter++; 
+    new_thread->stack = NULL; 
 
     thread_cur = new_thread;
 
