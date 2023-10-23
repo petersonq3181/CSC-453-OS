@@ -226,22 +226,23 @@ void lwp_exit(int status) {
     
     /* record termination status of caller */
     int low8bits = status & 0xFF;
-    thread_cur->status = MKTERMSTAT(low8bits, thread_cur->status);
+    // thread_cur->status = MKTERMSTAT(low8bits, thread_cur->status);
+    thread_cur->status = low8bits;
     /* sets calling threads status to this new term status? */
 
     lwp_yield();
 }
 
 tid_t lwp_wait(int *status) {
-    if (sched->qlen() < 2) {
-        return NO_THREAD;
-    }
+    if (sched->qlen() < 2) return NO_THREAD;
 
     lwp_yield();
 
     if (!isEmpty(&terminated)) {
         thread w = dequeue(&terminated);
         tid_t ret = w->tid;
+
+        *status = w->status;
 
         /* deallocate resources  */
         if (!(w->stack == NULL)) {
@@ -252,16 +253,12 @@ tid_t lwp_wait(int *status) {
         }
         free(w);
         w = NULL;
-        
+
         return ret;
     }
 
     sched->remove(thread_cur);
     enqueue(&waiting, thread_cur);
-
-    *status = thread_cur->status;
-
-    
 
     return thread_cur->tid;
 }
