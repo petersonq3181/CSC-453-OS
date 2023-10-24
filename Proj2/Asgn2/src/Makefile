@@ -14,7 +14,15 @@ HUNGRYOBJS = hungrysnakes.o
 
 NUMOBJS    = numbersmain.o
 
-OBJS	= $(SNAKEOBJS) $(HUNGRYOBJS) $(NUMOBJS) 
+RROBJS = rr.o 
+
+UTILSOBJS = util.o 
+
+MGCOBJS = magic64.o 
+
+LIBOBJ = libLWP.a
+
+OBJS	= $(SNAKEOBJS) $(HUNGRYOBJS) $(NUMOBJS) $(RROBJS) $(UTILSOBJS) $(MGCOBJS) $(LIBOBJ)
 
 SRCS	= randomsnakes.c numbersmain.c hungrysnakes.c
 

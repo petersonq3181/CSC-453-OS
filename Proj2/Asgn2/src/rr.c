@@ -21,14 +21,14 @@ void rr_admit(thread new_thread) {
 
     if (head == NULL) {
         head = new_node;
-        new_node->next = head; // Pointing to itself
+        new_node->next = head;
     } else {
         Node* temp = head;
         while (temp->next != head) {
             temp = temp->next;
         }
         temp->next = new_node;
-        new_node->next = head; // Closing the circle
+        new_node->next = head;
     }
 }
 
@@ -70,7 +70,7 @@ thread rr_next(void) {
     }
 
     thread t = head->t;
-    head = head->next; // Move to the next thread in the circle
+    head = head->next;
 
     return t;
 }

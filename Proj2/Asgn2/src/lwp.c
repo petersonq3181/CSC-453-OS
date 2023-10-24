@@ -162,7 +162,6 @@ tid_t lwp_wait(int *status) {
         sched->remove(thread_cur);
         enqueue(&terminated, thread_cur);
         lwp_yield();
-        fflush(stdout);
         return ret;
     }
 
