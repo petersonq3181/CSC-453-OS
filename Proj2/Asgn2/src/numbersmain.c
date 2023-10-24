@@ -45,9 +45,6 @@
 #include "lwp.h"
 #include "schedulers.h"
 
-#include "fcfs.h"
-#include "thread_list.h"
-
 #define MAXSNAKES  100
 
 static void indentnum(void *num);
