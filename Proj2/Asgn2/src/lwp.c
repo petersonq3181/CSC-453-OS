@@ -7,7 +7,6 @@
 tid_t tid_counter = 1;
 thread thread_cur = NULL;
 
-/* for now allocate just a bit of bytes for testing */
 int howbig = 2 * 1024 * 1024; 
 
 
@@ -63,14 +62,6 @@ thread dequeue(Queue* q) {
     return item;
 }
 
-thread peek(Queue* q) {
-    if (q->front == NULL) {
-        printf("Queue is empty.\n");
-        exit(1);
-    }
-    return q->front->data;
-}
-
 int isEmpty(Queue* q) {
     return q->front == NULL;
 }
@@ -91,19 +82,6 @@ void freeQueueResources(Queue* q) {
     }
 }
 
-void printQueue(Queue* q) {
-    if (isEmpty(q)) {
-        printf("Queue is empty.\n\n");
-        return;
-    }
-
-    Node* currentNode = q->front;
-    while (currentNode != NULL) {
-        print_lwp(currentNode->data);
-        currentNode = currentNode->next;
-    }
-    printf("\n\n");
-}
 
 
 /* ----- main LWP API funcs */
@@ -152,18 +130,6 @@ tid_t lwp_create(lwpfun function, void *argument) {
 
     /* admit thread to scheduler */
     sched->admit(new_thread);
-
-    /* for debugging */
-    /* 
-    printf("new  tid: %d\n", new_thread->tid);
-    printf("new_thread->stack: %p\n", new_thread->stack);
-    printf("endofstack (after adjustment): %p\n", endofstack);
-    printf("new_thread->state.rdi: %p\n", new_thread->state.rdi);
-    printf("new_thread->state.rsi: %p\n", new_thread->state.rsi);
-    printf("new_thread->state.rbp: %lu\n", new_thread->state.rbp);
-    printf("new_thread->state.rsp: %lu\n\n\n", new_thread->state.rsp);
-    fflush(stdout);
-    */
     
     return new_thread->tid;
 }
@@ -179,11 +145,8 @@ void lwp_exit(int status) {
     }
     
     /* record termination status of caller */
-    int low8bits = status & 0xFF;
-    // thread_cur->status = MKTERMSTAT(low8bits, thread_cur->status);
-    thread_cur->status = low8bits;
-    /* sets calling threads status to this new term status? */
-
+    thread_cur->status = MKTERMSTAT(thread_cur->status, status);
+    
     lwp_yield();
 }
 
@@ -202,7 +165,6 @@ tid_t lwp_wait(int *status) {
         fflush(stdout);
         return ret;
     }
-
 
     lwp_yield();
 
@@ -236,9 +198,7 @@ tid_t lwp_gettid(void) {
         return NO_THREAD; 
     }
 
-    tid_t res;
-    res = thread_cur->tid;
-    return res;
+    return thread_cur->tid;
 }
 
 thread tid2thread(tid_t tid) {
@@ -270,20 +230,6 @@ void lwp_yield(void) {
         exit(thread_cur->status);
     }
     
-    /* 
-    printf("yield 1\n");
-    printf("nxt->state.rdi: %p\n", nxt->state.rdi);
-    printf("nxt->state.rsi: %p\n", nxt->state.rsi);
-    printf("nxt->state.rbp: %lu\n", nxt->state.rbp);
-    printf("nxt->state.rsp: %lu\n", nxt->state.rsp);
-    printf("yield 2\n");
-    printf("thread_cur->state.rdi: %p\n", thread_cur->state.rdi);
-    printf("thread_cur->state.rsi: %p\n", thread_cur->state.rsi);
-    printf("thread_cur->state.rbp: %lu\n", thread_cur->state.rbp);
-    printf("thread_cur->state.rsp: %lu\n", thread_cur->state.rsp);
-    fflush(stdout);
-    */
-
     thread tmp = thread_cur;
     thread_cur = nxt;
 
@@ -309,45 +255,28 @@ void lwp_start(void) {
 
     thread_cur = new_thread;
 
-    /* admit main thread to scheduler */
     sched->admit(new_thread);
 
-    /* yield */
     lwp_yield();
 }
 
+scheduler lwp_get_scheduler(void) {
+    return sched;
+}
 
-
-/* ----- Additional self-test functions */
-
-void lwp_test4(void) {
-    printf("Number of threads in the scheduler: %d\n", sched->qlen());
-
-    tid_t tid_search = 2;
-    thread result_thread = tid2thread(tid_search);
-    if (result_thread) {
-        printf("Thread with tid %d found!\n", tid_search);
-    } else {
-        printf("Thread with tid %d not found.\n", tid_search);
+void lwp_set_scheduler(scheduler fun) {
+    if (fun == NULL) {
+        return; 
     }
 
-    printf("Current thread tid: %d\n", lwp_gettid());
+    fun->init();
 
-    sched->remove(result_thread);
-    printf("Number of threads after removing: %d\n", sched->qlen());
-}
+    while (sched->qlen()) {
+        thread t = sched->next();
 
+        fun->admit(t);
+        sched->remove(t);
+    }
 
-void print_thread_cur() {
-    printf("thread_cur tid: %d\n", thread_cur->tid);
-    fflush(stdout);
-}
-
-void print_lwp(thread t) {
-    printf("tid: %d\n", t->tid);
-    printf("address pointed by t: %p\n", t);
-    printf("thread->stack: %p\n", t->stack);
-    printf("thread->state.rdi: %p\n", t->state.rdi);
-    printf("thread->state.rsi: %p\n", t->state.rsi);
-    fflush(stdout);
+    sched = fun;
 }
