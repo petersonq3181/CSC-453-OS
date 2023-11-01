@@ -14,9 +14,27 @@ class TLB:
     def __init__(self):
         self.entries = [{'p': None, 'f': None} for _ in range(TLB_SIZE)]
 
+def split_virtual(addr):
+    if not 0 <= addr <= 65535:
+        raise ValueError("addr must be a 16-bit unsigned integer")
+    
+    binary_representation = format(addr, '016b')
+    
+    page_number = int(binary_representation[:8], 2)
+    frame_offset = int(binary_representation[-8:], 2)
+    
+    return page_number, frame_offset
+
 
 
 def main():
+
+    gg, aa = split_virtual(64815)
+    print(gg)
+    print(aa)
+    print('lol')
+    return 
+
     if len(sys.argv) < 2:
         print('Error: Must provide at least one argument')
         sys.exit(1)
