@@ -29,12 +29,7 @@ def split_virtual(addr):
 
 def main():
 
-    gg, aa = split_virtual(64815)
-    print(gg)
-    print(aa)
-    print('lol')
-    return 
-
+    # ----- program input parsing 
     if len(sys.argv) < 2:
         print('Error: Must provide at least one argument')
         sys.exit(1)
@@ -54,6 +49,18 @@ def main():
         PRA = sys.argv[3]
 
     print('got inputs: \n\t file: %s \n\t frames: %d \n\t PRA %s' % (rf, NUM_FRAMES, PRA))
+
+    # ----- 
+    try:
+        with open(rf, 'r') as file:
+            for line in file:
+                num = int(line.strip())
+                print(num) 
+    except FileNotFoundError:
+        print(f'Error: The file {rf} was not found')
+        sys.exit(1)
+
+
 
 
 if __name__ == "__main__":
