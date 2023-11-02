@@ -20,6 +20,11 @@ class PageTable:
     def update_entry(self, pageNumber, frameNumber, loaded):
         self.entries[pageNumber] = (frameNumber, loaded)
 
+    def print_state(self): 
+        print('\n\n----- Page Table:')
+        for page, (frame, loaded) in enumerate(self.entries):
+            print('Page:', page, 'Frame:', frame, 'Loaded:', loaded)
+        print('\n\n')
 
 class TLB: 
     # TODO refactor so stuff is put and taken out in FIFO order 
@@ -32,6 +37,12 @@ class TLB:
             if entry[0] == pageNumber:
                 return entry[1]
         return -1
+    
+    def print_state(self): 
+        print('\n\n----- TLB:')
+        for (page, frame) in self.entries:
+            print('Page:', page, 'Frame:', frame)
+        print('\n\n')
     
 class PhysicalMemory:
     def __init__(self, numFrames):
@@ -53,6 +64,14 @@ class PhysicalMemory:
                 return index
         return -1 
     
+    def print_state(self): 
+        print('\n\n----- Physical Memory:')
+        for index, frame in enumerate(self.frames):
+            content = frame['content']
+            pageNumber = frame['pageNumber']
+            print("Frame", index, "=> Content:", content, ", Page Number:", pageNumber)
+        print('\n\n')
+    
 class BackingStore:
     def __init__(self, filePath):
         self.filePath = filePath
@@ -64,18 +83,33 @@ class BackingStore:
     
     def get_page(self, pageNumber):
         if self.data is None:
-            raise ValueError("Data not loaded; call load() first")
+            raise ValueError('Data not loaded; call load() first')
         
         if not (0 <= pageNumber < 256):
-            raise ValueError("Page number must be between 0 and 255")
+            raise ValueError('Page number must be between 0 and 255')
         
         start = pageNumber * PF_SIZE
         end = start + PF_SIZE
         return self.data[start:end]
+    
+def get_reference_seq(rf):
+    refSeq = [] 
+    try:
+        with open(rf, 'r') as file:
+            for line in file:
+                refSeq.append(int(line.strip()))
+    except FileNotFoundError:
+        print(f'Error: The file {rf} was not found')
+        sys.exit(1)
+    except ValueError as e:
+        print(f'Error: Problem converting a line to an integer: {e}')
+        sys.exit(1)
+
+    return refSeq
 
 def split_virtual(addr):
     if not 0 <= addr <= 65535:
-        raise ValueError("addr must be a 16-bit unsigned integer")
+        raise ValueError('addr must be a 16-bit unsigned integer')
     
     binary_representation = format(addr, '016b')
     
@@ -83,6 +117,8 @@ def split_virtual(addr):
     frameOffset = int(binary_representation[-8:], 2)
     
     return pageNumber, frameOffset
+
+
 
 
 
@@ -110,26 +146,20 @@ def main():
     print('got inputs: \n\t file: %s \n\t frames: %d \n\t PRA %s' % (rf, NUM_FRAMES, PRA))
 
     # ----- read in reference sequence 
-    refSeq = [] 
-    try:
-        with open(rf, 'r') as file:
-            for line in file:
-                refSeq.append(int(line.strip()))
-    except FileNotFoundError:
-        print(f'Error: The file {rf} was not found')
-        sys.exit(1)
-    except ValueError as e:
-        print(f'Error: Problem converting a line to an integer: {e}')
-        sys.exit(1)
-
-    print('reference sequence: ')
-    print(refSeq)
+    refSeq = get_reference_seq(rf)
+    print('reference sequence: ', refSeq)
 
     # ----- instantiate hardware / mmu structures 
     pageTable = PageTable()
     tlb = TLB()
     physMem = PhysicalMemory(NUM_FRAMES)
     bs = BackingStore(BIN_PATH)
+
+
+    pageTable.print_state()
+    tlb.print_state()
+    physMem.print_state()
+    return 
 
     # ----- memory access process with TLB
     
@@ -162,5 +192,5 @@ def main():
             pageTable.update_entry(pageNumber, frameNumber, True)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
