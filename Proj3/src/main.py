@@ -153,13 +153,10 @@ def main():
             print('Error: PRA is not a valid string') 
             sys.exit(1)
 
-    print('got inputs: \n\t file: %s \n\t frames: %d \n\t PRA %s' % (rf, NUM_FRAMES, PRA))
-
     # ----- read in reference sequence 
     refSeq = get_reference_seq(rf)
-    print('reference sequence: ', refSeq)
 
-    # ----- instantiate hardware / mmu structures 
+    # ----- init mmu structures 
     pageTable = PageTable()
     tlb = TLB()
     physMem = PhysicalMemory(NUM_FRAMES)
@@ -171,9 +168,6 @@ def main():
     numFaults = 0
     numTLBMisses = 0
     
-    
-    # TODO (for now; change later)
-    # virtualAddr = refSeq[0]
     for virtualAddr in refSeq: 
 
         n += 1
@@ -197,13 +191,12 @@ def main():
                 if frameNumber == -1:
                     pass 
 
-                # correct page table and other structures 
                 # load from backing store into frame 
                 page = bs.get_page(pageNumber)
                 physMem.load_page(pageNumber, page)
                 pageTable.update_entry(pageNumber, frameNumber, True)
+                
 
-        # print(virtualAddr, '?', frameNumber, format_byte_arr(page))
         gg = 2
         print('{}, {}, {}, {}'.format(virtualAddr, gg, frameNumber, format_byte_arr(page)))
     print('Number of Translated Addresses = {}'.format(n))
