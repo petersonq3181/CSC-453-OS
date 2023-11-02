@@ -69,7 +69,7 @@ class PhysicalMemory:
         for index, frame in enumerate(self.frames):
             content = frame['content']
             pageNumber = frame['pageNumber']
-            print("Frame", index, "=> Content:", content, ", Page Number:", pageNumber)
+            print('Frame', index, ', Page Number:', pageNumber, ', Content:', content, )
         print('\n\n')
     
 class BackingStore:
@@ -78,7 +78,7 @@ class BackingStore:
         self.data = None
     
     def load(self):
-        with open(self.file_path, 'rb') as f:
+        with open(self.filePath, 'rb') as f:
             self.data = bytearray(f.read())
     
     def get_page(self, pageNumber):
@@ -154,16 +154,11 @@ def main():
     tlb = TLB()
     physMem = PhysicalMemory(NUM_FRAMES)
     bs = BackingStore(BIN_PATH)
-
-
-    pageTable.print_state()
-    tlb.print_state()
-    physMem.print_state()
-    return 
+    bs.load()
 
     # ----- memory access process with TLB
     
-    # TODO (change) (for now)
+    # TODO (for now; change later)
     virtualAddr = refSeq[0]
 
     pageNumber, frameOffset = split_virtual(virtualAddr)
@@ -190,6 +185,9 @@ def main():
             page = bs.get_page(pageNumber)
             physMem.load_page(pageNumber, page)
             pageTable.update_entry(pageNumber, frameNumber, True)
+
+            pageTable.print_state()
+            physMem.print_state()
 
 
 if __name__ == '__main__':
