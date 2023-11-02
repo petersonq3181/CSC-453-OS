@@ -27,21 +27,33 @@ class PageTable:
         print('\n')
 
 class TLB: 
-    # TODO refactor so stuff is put and taken out in FIFO order 
     def __init__(self):
         # pair represents: (page number, frame number)
         self.entries = [(None, None) for _ in range(TLB_SIZE)]
+        self.fifoQueue = collections.deque()
 
     def idx(self, pageNumber):
-        for entry in self.entries:
-            if entry[0] == pageNumber:
-                return entry[1]
+        for page, frame in self.entries:
+            if page == pageNumber:
+                return frame
         return -1
+
+    def add_entry(self, pageNumber, frameNumber):
+        for index, (page, frame) in enumerate(self.entries):
+            if page is None:
+                self.entries[index] = (pageNumber, frameNumber)
+                self.fifoQueue.append(index)
+                return
+        
+        oldestIdx = self.fifoQueue.popleft()
+        self.entries[oldestIdx] = (pageNumber, frameNumber)
+        self.fifoQueue.append(oldestIdx)
     
     def remove_entry(self, pageNumber):
         for index, (page, frame) in enumerate(self.entries):
             if page == pageNumber:
                 self.entries[index] = (None, None)
+                self.fifoQueue.remove(index)
                 break
     
     def print_state(self): 
@@ -74,7 +86,7 @@ class PhysicalMemory:
             self.frames[freeFrameIndex]['pageNumber'] = pageNumber
             self.pageOrderQueue.append((pageNumber, freeFrameIndex))  # Add the page to the FIFO queue
             pageTable.update_entry(pageNumber, freeFrameIndex, True)
-            return True
+            return freeFrameIndex
         
         # if no free frame is available perform FIFO page replacement
         oldPageNumber, oldFrameIndex = self.pageOrderQueue.popleft()
@@ -86,7 +98,7 @@ class PhysicalMemory:
         pageTable.update_entry(oldPageNumber, -1, False)
         pageTable.update_entry(pageNumber, oldFrameIndex, True)
         tlb.remove_entry(oldPageNumber)
-        return True
+        return freeFrameIndex
     
     def find_free(self):
         for index, frame in enumerate(self.frames):
@@ -199,10 +211,13 @@ def main():
     numFaults = 0
     numTLBMisses = 0
     
-    for virtualAddr in refSeq: 
+    # for virtualAddr in refSeq: 
+    pageNumbers = [7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1]
+    for pageNumber in pageNumbers:
+        virtualAddr = pageNumber
 
         n += 1
-        pageNumber, frameOffset = split_virtual(virtualAddr)
+        # pageNumber, frameOffset = split_virtual(virtualAddr)
 
         frameNumber = -1 
 
@@ -218,11 +233,12 @@ def main():
 
                 page = bs.get_page(pageNumber)
 
-                if PRA.lower() is 'fifo': 
-                    physMem.load_page_fifo(pageNumber, page, pageTable, tlb)
-                elif PRA.lower() is 'lru': 
+                if PRA.lower() == 'fifo': 
+                    frameNumber = physMem.load_page_fifo(pageNumber, page, pageTable, tlb)
+                elif PRA.lower() == 'lru': 
                     pass 
 
+            tlb.add_entry(pageNumber, frameNumber)
 
         gg = 2
         print('{}, {}, {}, {}'.format(virtualAddr, gg, frameNumber, format_byte_arr(page)))
