@@ -6,7 +6,6 @@ PF_SIZE = 256
 TLB_SIZE = 16 
 PRA = 'fifo'
 BIN_PATH = 'BACKING_STORE.bin'
-NUM_FAULTS = 0 
 
 class PageTable:
     def __init__(self):
@@ -118,6 +117,11 @@ def split_virtual(addr):
     
     return pageNumber, frameOffset
 
+def format_byte_arr(arr):
+    hex = arr.hex().upper()
+    out = ''.join(hex[i:i + 4] for i in range(0, len(hex), 4))
+    return out
+
 
 
 
@@ -129,7 +133,7 @@ def main():
         print('Error: Must provide at least one argument')
         sys.exit(1)
 
-    global NUM_FRAMES, PRA, NUM_FAULTS
+    global NUM_FRAMES, PRA
 
     rf = sys.argv[1]
     
@@ -163,37 +167,45 @@ def main():
     bs.load()
 
     # ----- memory access process with TLB
+    numFaults = 0
+    numTLBMisses = 0
+    
     
     # TODO (for now; change later)
-    virtualAddr = refSeq[0]
+    # virtualAddr = refSeq[0]
+    for virtualAddr in refSeq: 
 
-    pageNumber, frameOffset = split_virtual(virtualAddr)
+        pageNumber, frameOffset = split_virtual(virtualAddr)
 
-    frameNumber = -1 
+        frameNumber = -1 
 
-    # check TLB
-    frameNumber = tlb.idx(pageNumber)
-    if frameNumber == -1: 
-        # check page table 
-        frameNumber, loadedBit = pageTable.idx(pageNumber)
+        # check TLB
+        frameNumber = tlb.idx(pageNumber)
         if frameNumber == -1: 
+            numTLBMisses += 1
 
-            # --- PAGE FAULT: case where page entry not found in TLB nor page table 
-            # bring in missing page (TODO for now assuming no swapping required)
-            frameNumber = physMem.find_free()
-            if frameNumber == -1:
-                # TODO swapping 
-                print('would do swapping\n')
-                pass 
+            # check page table 
+            frameNumber, loadedBit = pageTable.idx(pageNumber)
+            if frameNumber == -1: 
+                numFaults += 1 
 
-            # correct page table and other structures 
-            # load from backing store into frame 
-            page = bs.get_page(pageNumber)
-            physMem.load_page(pageNumber, page)
-            pageTable.update_entry(pageNumber, frameNumber, True)
+                # --- PAGE FAULT: case where page entry not found in TLB nor page table 
+                # bring in missing page (TODO for now assuming no swapping required)
+                frameNumber = physMem.find_free()
+                if frameNumber == -1:
+                    pass 
 
-            pageTable.print_state()
-            physMem.print_state()
+                # correct page table and other structures 
+                # load from backing store into frame 
+                page = bs.get_page(pageNumber)
+                physMem.load_page(pageNumber, page)
+                pageTable.update_entry(pageNumber, frameNumber, True)
+
+        print(virtualAddr, '?', frameNumber, format_byte_arr(page))
+
+    print(numFaults)
+    print(numTLBMisses)
+
 
 
 if __name__ == '__main__':
