@@ -5,6 +5,7 @@ NUM_FRAMES = 256
 PF_SIZE = 256 
 TLB_SIZE = 16 
 PRA = 'fifo'
+BIN_PATH = 'BACKING_STORE.bin'
 NUM_FAULTS = 0 
 
 class PageTable:
@@ -15,6 +16,9 @@ class PageTable:
 
     def idx(self, pageNumber):
         return self.entries[pageNumber] if self.entries[pageNumber] is not None else -1
+    
+    def update_entry(self, pageNumber, frameNumber, loaded):
+        self.entries[pageNumber] = (frameNumber, loaded)
 
 
 class TLB: 
@@ -49,9 +53,25 @@ class PhysicalMemory:
                 return index
         return -1 
     
-class BackingStore: 
-    def __init__(self): 
-        self.gg = 1
+class BackingStore:
+    def __init__(self, filePath):
+        self.filePath = filePath
+        self.data = None
+    
+    def load(self):
+        with open(self.file_path, 'rb') as f:
+            self.data = bytearray(f.read())
+    
+    def get_page(self, pageNumber):
+        if self.data is None:
+            raise ValueError("Data not loaded; call load() first")
+        
+        if not (0 <= pageNumber < 256):
+            raise ValueError("Page number must be between 0 and 255")
+        
+        start = pageNumber * PF_SIZE
+        end = start + PF_SIZE
+        return self.data[start:end]
 
 def split_virtual(addr):
     if not 0 <= addr <= 65535:
@@ -89,11 +109,6 @@ def main():
 
     print('got inputs: \n\t file: %s \n\t frames: %d \n\t PRA %s' % (rf, NUM_FRAMES, PRA))
 
-    # ---- instantiate hardware / mmu structures 
-    pageTable = PageTable()
-    tlb = TLB()
-    physMem = PhysicalMemory(NUM_FRAMES)
-
     # ----- read in reference sequence 
     refSeq = [] 
     try:
@@ -109,8 +124,17 @@ def main():
 
     print('reference sequence: ')
     print(refSeq)
-    return 
 
+    # ----- instantiate hardware / mmu structures 
+    pageTable = PageTable()
+    tlb = TLB()
+    physMem = PhysicalMemory(NUM_FRAMES)
+    bs = BackingStore(BIN_PATH)
+
+    # ----- memory access process with TLB
+    
+    # TODO (change) (for now)
+    virtualAddr = refSeq[0]
 
     pageNumber, frameOffset = split_virtual(virtualAddr)
 
@@ -125,15 +149,18 @@ def main():
 
             # --- PAGE FAULT: case where page entry not found in TLB nor page table 
             # bring in missing page (TODO for now assuming no swapping required)
-            freeIdx = physMem.find_free()
-            if freeIdx == -1:
+            frameNumber = physMem.find_free()
+            if frameNumber == -1:
                 # TODO swapping 
                 print('would do swapping\n')
                 pass 
 
             # correct page table and other structures 
             # load from backing store into frame 
-            
+            page = bs.get_page(pageNumber)
+            physMem.load_page(pageNumber, page)
+            pageTable.update_entry(pageNumber, frameNumber, True)
+
 
 if __name__ == "__main__":
     main()
