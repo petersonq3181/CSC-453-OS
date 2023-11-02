@@ -1,4 +1,5 @@
 import sys
+import collections
 
 NUM_PAGES = 256 
 NUM_FRAMES = 256 
@@ -37,6 +38,12 @@ class TLB:
                 return entry[1]
         return -1
     
+    def remove_entry(self, pageNumber):
+        for index, (page, frame) in enumerate(self.entries):
+            if page == pageNumber:
+                self.entries[index] = (None, None)
+                break
+    
     def print_state(self): 
         print('\n----- TLB:')
         for (page, frame) in self.entries:
@@ -47,7 +54,9 @@ class PhysicalMemory:
     def __init__(self, numFrames):
         self.frames = [{'content': None, 'pageNumber': None} for _ in range(numFrames)]
         self.numFrames = numFrames
+        self.pageOrderQueue = collections.deque()  # FIFO queue to store the order of loaded pages
 
+    # original load page (TODO might delete later)
     def load_page(self, pageNumber, content):
         for frame in self.frames:
             if frame['content'] is None:
@@ -56,7 +65,29 @@ class PhysicalMemory:
                 return True
         return False
     
-    # TODO refactor; might need to use a free-frames queue instead 
+    def load_page_fifo(self, pageNumber, content, pageTable, tlb):
+        freeFrameIndex = self.find_free()
+
+        # if there is a free frame 
+        if freeFrameIndex != -1:
+            self.frames[freeFrameIndex]['content'] = content
+            self.frames[freeFrameIndex]['pageNumber'] = pageNumber
+            self.pageOrderQueue.append((pageNumber, freeFrameIndex))  # Add the page to the FIFO queue
+            pageTable.update_entry(pageNumber, freeFrameIndex, True)
+            return True
+        
+        # if no free frame is available perform FIFO page replacement
+        oldPageNumber, oldFrameIndex = self.pageOrderQueue.popleft()
+        self.frames[oldFrameIndex]['content'] = content
+        self.frames[oldFrameIndex]['pageNumber'] = pageNumber
+        self.pageOrderQueue.append((pageNumber, oldFrameIndex))
+
+        # update page table and TLB
+        pageTable.update_entry(oldPageNumber, -1, False)
+        pageTable.update_entry(pageNumber, oldFrameIndex, True)
+        tlb.remove_entry(oldPageNumber)
+        return True
+    
     def find_free(self):
         for index, frame in enumerate(self.frames):
             if frame['content'] is None and frame['pageNumber'] is None:
@@ -180,22 +211,18 @@ def main():
         if frameNumber == -1: 
             numTLBMisses += 1
 
-            # check page table 
+            # check page table, if not found then page fault 
             frameNumber, loadedBit = pageTable.idx(pageNumber)
             if frameNumber == -1: 
                 numFaults += 1 
 
-                # --- PAGE FAULT: case where page entry not found in TLB nor page table 
-                # bring in missing page (TODO for now assuming no swapping required)
-                frameNumber = physMem.find_free()
-                if frameNumber == -1:
+                page = bs.get_page(pageNumber)
+
+                if PRA.lower() is 'fifo': 
+                    physMem.load_page_fifo(pageNumber, page, pageTable, tlb)
+                elif PRA.lower() is 'lru': 
                     pass 
 
-                # load from backing store into frame 
-                page = bs.get_page(pageNumber)
-                physMem.load_page(pageNumber, page)
-                pageTable.update_entry(pageNumber, frameNumber, True)
-                
 
         gg = 2
         print('{}, {}, {}, {}'.format(virtualAddr, gg, frameNumber, format_byte_arr(page)))
