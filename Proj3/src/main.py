@@ -167,6 +167,7 @@ def main():
     bs.load()
 
     # ----- memory access process with TLB
+    n = 0
     numFaults = 0
     numTLBMisses = 0
     
@@ -175,6 +176,7 @@ def main():
     # virtualAddr = refSeq[0]
     for virtualAddr in refSeq: 
 
+        n += 1
         pageNumber, frameOffset = split_virtual(virtualAddr)
 
         frameNumber = -1 
@@ -201,12 +203,15 @@ def main():
                 physMem.load_page(pageNumber, page)
                 pageTable.update_entry(pageNumber, frameNumber, True)
 
-        print(virtualAddr, '?', frameNumber, format_byte_arr(page))
-
-    print(numFaults)
-    print(numTLBMisses)
-
-
+        # print(virtualAddr, '?', frameNumber, format_byte_arr(page))
+        gg = 2
+        print('{}, {}, {}, {}'.format(virtualAddr, gg, frameNumber, format_byte_arr(page)))
+    print('Number of Translated Addresses = {}'.format(n))
+    print('Page Faults = {}'.format(numFaults))
+    print('Page Fault Rate = {:.3f}'.format(numFaults / n))
+    print('TLB Hits = {}'.format(n - numTLBMisses))
+    print('TLB Misses = {}'.format(numTLBMisses))
+    print('TLB Hit Rate = {:.3f}'.format((n - numTLBMisses) / n))
 
 if __name__ == '__main__':
     main()
