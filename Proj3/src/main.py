@@ -48,6 +48,10 @@ class PhysicalMemory:
             if frame['content'] is None and frame['pageNumber'] is None:
                 return index
         return -1 
+    
+class BackingStore: 
+    def __init__(self): 
+        self.gg = 1
 
 def split_virtual(addr):
     if not 0 <= addr <= 65535:
@@ -64,7 +68,7 @@ def split_virtual(addr):
 
 def main():
 
-    # ----- program input parsing 
+    # ----- input parsing 
     if len(sys.argv) < 2:
         print('Error: Must provide at least one argument')
         sys.exit(1)
@@ -85,53 +89,51 @@ def main():
 
     print('got inputs: \n\t file: %s \n\t frames: %d \n\t PRA %s' % (rf, NUM_FRAMES, PRA))
 
-    # ---- instantiate main hardware / mmu structures 
+    # ---- instantiate hardware / mmu structures 
     pageTable = PageTable()
     tlb = TLB()
     physMem = PhysicalMemory(NUM_FRAMES)
 
-    # ----- 
+    # ----- read in reference sequence 
+    refSeq = [] 
     try:
         with open(rf, 'r') as file:
             for line in file:
-                virtualAddr = int(line.strip())
-                
-                pageNumber, frameOffset = split_virtual(virtualAddr)
-
-                frameNumber = -1 
-
-                # check TLB
-                frameNumber = tlb.idx(pageNumber)
-                if frameNumber == -1: 
-                    # check page table 
-                    frameNumber, loadedBit = pageTable.idx(pageNumber)
-                    if frameNumber == -1: 
-
-                        # --- PAGE FAULT: case where page entry not found in TLB nor page table 
-                        # bring in missing page (TODO for now assuming no swapping required)
-                        freeIdx = physMem.find_free()
-                        if freeIdx == -1:
-                            # TODO swapping 
-                            pass 
-
-
-
-                        # correct page table and other structures 
-
-
-
-
-
-
-
-                # testing this for one addr for now 
-                return 
+                refSeq.append(int(line.strip()))
     except FileNotFoundError:
         print(f'Error: The file {rf} was not found')
         sys.exit(1)
+    except ValueError as e:
+        print(f'Error: Problem converting a line to an integer: {e}')
+        sys.exit(1)
+
+    print('reference sequence: ')
+    print(refSeq)
+    return 
 
 
+    pageNumber, frameOffset = split_virtual(virtualAddr)
 
+    frameNumber = -1 
+
+    # check TLB
+    frameNumber = tlb.idx(pageNumber)
+    if frameNumber == -1: 
+        # check page table 
+        frameNumber, loadedBit = pageTable.idx(pageNumber)
+        if frameNumber == -1: 
+
+            # --- PAGE FAULT: case where page entry not found in TLB nor page table 
+            # bring in missing page (TODO for now assuming no swapping required)
+            freeIdx = physMem.find_free()
+            if freeIdx == -1:
+                # TODO swapping 
+                print('would do swapping\n')
+                pass 
+
+            # correct page table and other structures 
+            # load from backing store into frame 
+            
 
 if __name__ == "__main__":
     main()
