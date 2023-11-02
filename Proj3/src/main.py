@@ -21,10 +21,10 @@ class PageTable:
         self.entries[pageNumber] = (frameNumber, loaded)
 
     def print_state(self): 
-        print('\n\n----- Page Table:')
+        print('\n----- Page Table:')
         for page, (frame, loaded) in enumerate(self.entries):
             print('Page:', page, 'Frame:', frame, 'Loaded:', loaded)
-        print('\n\n')
+        print('\n')
 
 class TLB: 
     # TODO refactor so stuff is put and taken out in FIFO order 
@@ -39,10 +39,10 @@ class TLB:
         return -1
     
     def print_state(self): 
-        print('\n\n----- TLB:')
+        print('\n----- TLB:')
         for (page, frame) in self.entries:
             print('Page:', page, 'Frame:', frame)
-        print('\n\n')
+        print('\n')
     
 class PhysicalMemory:
     def __init__(self, numFrames):
@@ -65,12 +65,12 @@ class PhysicalMemory:
         return -1 
     
     def print_state(self): 
-        print('\n\n----- Physical Memory:')
+        print('\n----- Physical Memory:')
         for index, frame in enumerate(self.frames):
             content = frame['content']
             pageNumber = frame['pageNumber']
             print('Frame', index, ', Page Number:', pageNumber, ', Content:', content, )
-        print('\n\n')
+        print('\n')
     
 class BackingStore:
     def __init__(self, filePath):
@@ -136,12 +136,18 @@ def main():
     if len(sys.argv) > 2:
         try:
             NUM_FRAMES = int(sys.argv[2])
+
+            if not (0 <= NUM_FRAMES < PF_SIZE):
+                raise ValueError
         except ValueError:
-            print('Error: NUM_FRAMES must be an integer')
+            print('Error: NUM_FRAMES must be an integer in a valid range')
             sys.exit(1)
 
     if len(sys.argv) > 3:
         PRA = sys.argv[3]
+        if PRA not in ['fifo', 'lru', 'opt']:
+            print('Error: PRA is not a valid string') 
+            sys.exit(1)
 
     print('got inputs: \n\t file: %s \n\t frames: %d \n\t PRA %s' % (rf, NUM_FRAMES, PRA))
 
