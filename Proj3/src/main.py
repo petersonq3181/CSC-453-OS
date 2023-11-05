@@ -211,13 +211,9 @@ def main():
     numFaults = 0
     numTLBMisses = 0
     
-    # for virtualAddr in refSeq: 
-    pageNumbers = [7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1]
-    for pageNumber in pageNumbers:
-        virtualAddr = pageNumber
-
+    for virtualAddr in refSeq: 
         n += 1
-        # pageNumber, frameOffset = split_virtual(virtualAddr)
+        pageNumber, frameOffset = split_virtual(virtualAddr)
 
         frameNumber = -1 
 
@@ -232,6 +228,8 @@ def main():
                 numFaults += 1 
 
                 page = bs.get_page(pageNumber)
+                
+                value = int.from_bytes(page[frameOffset:frameOffset+1], 'little', signed=True)
 
                 if PRA.lower() == 'fifo': 
                     frameNumber = physMem.load_page_fifo(pageNumber, page, pageTable, tlb)
@@ -240,14 +238,13 @@ def main():
 
             tlb.add_entry(pageNumber, frameNumber)
 
-        gg = 2
-        print('{}, {}, {}, {}'.format(virtualAddr, gg, frameNumber, format_byte_arr(page)))
+        print('{}, {}, {}, {}'.format(virtualAddr, value, frameNumber, format_byte_arr(page)))
     print('Number of Translated Addresses = {}'.format(n))
     print('Page Faults = {}'.format(numFaults))
     print('Page Fault Rate = {:.3f}'.format(numFaults / n))
     print('TLB Hits = {}'.format(n - numTLBMisses))
     print('TLB Misses = {}'.format(numTLBMisses))
-    print('TLB Hit Rate = {:.3f}'.format((n - numTLBMisses) / n))
+    print('TLB Hit Rate = {:.3f}\n'.format((n - numTLBMisses) / n))
 
 if __name__ == '__main__':
     main()
