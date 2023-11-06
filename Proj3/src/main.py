@@ -98,7 +98,7 @@ class PhysicalMemory:
         pageTable.update_entry(oldPageNumber, -1, False)
         pageTable.update_entry(pageNumber, oldFrameIndex, True)
         tlb.remove_entry(oldPageNumber)
-        return freeFrameIndex
+        return oldFrameIndex
     
     def find_free(self):
         for index, frame in enumerate(self.frames):
