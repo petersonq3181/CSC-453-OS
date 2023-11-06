@@ -68,102 +68,86 @@ class PhysicalMemory:
         self.numFrames = numFrames
         self.pageOrderQueue = collections.deque()
         self.lruCache = collections.OrderedDict()
-
-    # original load page (TODO might delete later)
-    def load_page(self, pageNumber, content):
-        for frame in self.frames:
-            if frame['content'] is None:
-                frame['content'] = content
-                frame['pageNumber'] = pageNumber
-                return True
-        return False
     
     def load_page_fifo(self, pageNumber, content, pageTable, tlb):
-        freeFrameIndex = self.find_free()
+        freeIdx = self.find_free()
 
-        # if there is a free frame 
-        if freeFrameIndex != -1:
-            self.frames[freeFrameIndex]['content'] = content
-            self.frames[freeFrameIndex]['pageNumber'] = pageNumber
-            self.pageOrderQueue.append((pageNumber, freeFrameIndex))
-            pageTable.update_entry(pageNumber, freeFrameIndex, True)
-            return freeFrameIndex
+        if freeIdx != -1:
+            self.frames[freeIdx]['content'] = content
+            self.frames[freeIdx]['pageNumber'] = pageNumber
+            self.pageOrderQueue.append((pageNumber, freeIdx))
+            pageTable.update_entry(pageNumber, freeIdx, True)
+            return freeIdx
         
-        # if no free frame is available perform FIFO page replacement
-        oldPageNumber, oldFrameIndex = self.pageOrderQueue.popleft()
-        self.frames[oldFrameIndex]['content'] = content
-        self.frames[oldFrameIndex]['pageNumber'] = pageNumber
-        self.pageOrderQueue.append((pageNumber, oldFrameIndex))
+        oldPageNumber, oldFrameIdx = self.pageOrderQueue.popleft()
+        self.frames[oldFrameIdx]['content'] = content
+        self.frames[oldFrameIdx]['pageNumber'] = pageNumber
+        self.pageOrderQueue.append((pageNumber, oldFrameIdx))
 
-        # update page table and TLB
         pageTable.update_entry(oldPageNumber, -1, False)
-        pageTable.update_entry(pageNumber, oldFrameIndex, True)
+        pageTable.update_entry(pageNumber, oldFrameIdx, True)
         tlb.remove_entry(oldPageNumber)
-        return oldFrameIndex
+
+        return oldFrameIdx
     
     def load_page_lru(self, pageNumber, content, pageTable, tlb):
-        # if page is already loaded
         if pageNumber in self.lruCache:
-            frameIndex = self.lruCache.pop(pageNumber)
-            self.frames[frameIndex]['content'] = content
-            self.lruCache[pageNumber] = frameIndex
-            return frameIndex
+            frameIdx = self.lruCache.pop(pageNumber)
+            self.frames[frameIdx]['content'] = content
+            self.lruCache[pageNumber] = frameIdx
+            return frameIdx
         
-        freeFrameIndex = self.find_free()
+        freeIdx = self.find_free()
 
-        # if there is a free frame
-        if freeFrameIndex != -1:
-            self.frames[freeFrameIndex]['content'] = content
-            self.frames[freeFrameIndex]['pageNumber'] = pageNumber
-            self.lruCache[pageNumber] = freeFrameIndex
-            pageTable.update_entry(pageNumber, freeFrameIndex, True)
-            return freeFrameIndex
+        if freeIdx != -1:
+            self.frames[freeIdx]['content'] = content
+            self.frames[freeIdx]['pageNumber'] = pageNumber
+            self.lruCache[pageNumber] = freeIdx
+            pageTable.update_entry(pageNumber, freeIdx, True)
+            return freeIdx
 
-        # if no free frame is available evict the LRU page
-        lruPageNumber, lruFrameIndex = self.lruCache.popitem(last=False)
-        self.frames[lruFrameIndex]['content'] = content
-        self.frames[lruFrameIndex]['pageNumber'] = pageNumber
-        self.lruCache[pageNumber] = lruFrameIndex
+        lruPageNumber, lruFrameIdx = self.lruCache.popitem(last=False)
+        self.frames[lruFrameIdx]['content'] = content
+        self.frames[lruFrameIdx]['pageNumber'] = pageNumber
+        self.lruCache[pageNumber] = lruFrameIdx
 
-        # update page table and TLB for the evicted page
         pageTable.update_entry(lruPageNumber, -1, False)
         tlb.remove_entry(lruPageNumber)
-        # update page table and TLB for the new page
-        pageTable.update_entry(pageNumber, lruFrameIndex, True)
+        pageTable.update_entry(pageNumber, lruFrameIdx, True)
 
-        return lruFrameIndex
+        return lruFrameIdx
     
     def load_page_opt(self, pageNumber, content, future_references, pageTable, tlb):
-        freeFrameIndex = self.find_free()
+        freeIdx = self.find_free()
 
-        if freeFrameIndex != -1:
-            self.frames[freeFrameIndex]['content'] = content
-            self.frames[freeFrameIndex]['pageNumber'] = pageNumber
-            pageTable.update_entry(pageNumber, freeFrameIndex, True)
-            return freeFrameIndex
+        if freeIdx != -1:
+            self.frames[freeIdx]['content'] = content
+            self.frames[freeIdx]['pageNumber'] = pageNumber
+            pageTable.update_entry(pageNumber, freeIdx, True)
+            return freeIdx
 
-        farthest_use = -1
-        frame_to_replace = None
+        farthest = -1
+        toReplace = None
 
         for frame in self.frames:
             try:
                 index = future_references.index(frame['pageNumber'])
             except ValueError:
-                frame_to_replace = frame
+                toReplace = frame
                 break
-            if index > farthest_use:
-                farthest_use = index
-                frame_to_replace = frame
+            if index > farthest:
+                farthest = index
+                toReplace = frame
 
-        replaced_page_number = frame_to_replace['pageNumber']
-        frame_to_replace['content'] = content
-        frame_to_replace['pageNumber'] = pageNumber
+        replacedPageNumber = toReplace['pageNumber']
+        toReplace['content'] = content
+        toReplace['pageNumber'] = pageNumber
 
-        pageTable.update_entry(replaced_page_number, -1, False)
-        tlb.remove_entry(replaced_page_number)
-        pageTable.update_entry(pageNumber, frame_to_replace, True)
+        pageTable.update_entry(replacedPageNumber, -1, False)
+        tlb.remove_entry(replacedPageNumber)
+        pageTable.update_entry(pageNumber, toReplace, True)
 
-        return replaced_page_number
+        return replacedPageNumber
     
     def find_free(self):
         for index, frame in enumerate(self.frames):
@@ -223,11 +207,10 @@ def split_virtual(addr):
     if not 0 <= addr <= 65535:
         raise ValueError('addr must be a 16-bit unsigned integer')
     
-    binary_representation = format(addr, '016b')
+    binRepr = format(addr, '016b')
     
-    pageNumber = int(binary_representation[:8], 2)
-    frameOffset = int(binary_representation[-8:], 2)
-    
+    pageNumber = int(binRepr[:8], 2)
+    frameOffset = int(binRepr[-8:], 2)
     return pageNumber, frameOffset
 
 def format_byte_arr(arr):
@@ -268,6 +251,7 @@ def main():
 
     # ----- read in reference sequence 
     refSeq = get_reference_seq(rf)
+    refTuples = [(virtualAddr, *split_virtual(virtualAddr)) for virtualAddr in refSeq]
 
     # ----- init mmu structures 
     pageTable = PageTable()
@@ -276,16 +260,13 @@ def main():
     bs = BackingStore(BIN_PATH)
     bs.load()
 
-    # ----- memory access process with TLB
+    # ----- memory access process
     n = 0
     numFaults = 0
     numTLBMisses = 0
 
-    refTuples = [(virtualAddr, *split_virtual(virtualAddr)) for virtualAddr in refSeq]
-    
     for virtualAddr, pageNumber, frameOffset in refTuples: 
         n += 1
-        frameNumber = -1 
         
         if PRA.lower() == 'opt':
             futureSeq = [pn for _, pn, _ in refTuples[n:]]
