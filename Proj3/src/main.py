@@ -133,6 +133,38 @@ class PhysicalMemory:
 
         return lruFrameIndex
     
+    def load_page_opt(self, pageNumber, content, future_references, pageTable, tlb):
+        freeFrameIndex = self.find_free()
+
+        if freeFrameIndex != -1:
+            self.frames[freeFrameIndex]['content'] = content
+            self.frames[freeFrameIndex]['pageNumber'] = pageNumber
+            pageTable.update_entry(pageNumber, freeFrameIndex, True)
+            return freeFrameIndex
+
+        farthest_use = -1
+        frame_to_replace = None
+
+        for frame in self.frames:
+            try:
+                index = future_references.index(frame['pageNumber'])
+            except ValueError:
+                frame_to_replace = frame
+                break
+            if index > farthest_use:
+                farthest_use = index
+                frame_to_replace = frame
+
+        replaced_page_number = frame_to_replace['pageNumber']
+        frame_to_replace['content'] = content
+        frame_to_replace['pageNumber'] = pageNumber
+
+        pageTable.update_entry(replaced_page_number, -1, False)
+        tlb.remove_entry(replaced_page_number)
+        pageTable.update_entry(pageNumber, frame_to_replace, True)
+
+        return frame_to_replace
+    
     def find_free(self):
         for index, frame in enumerate(self.frames):
             if frame['content'] is None and frame['pageNumber'] is None:
@@ -245,17 +277,18 @@ def main():
     bs.load()
 
     # ----- memory access process with TLB
-    n = 0
     numFaults = 0
     numTLBMisses = 0
-    
-    for virtualAddr in refSeq: 
-        n += 1
-        pageNumber, frameOffset = split_virtual(virtualAddr)
 
-        frameNumber = -1 
+    refTuples = [(virtualAddr, *split_virtual(virtualAddr)) for virtualAddr in refSeq]
+
+    for n, (virtualAddr, pageNumber, frameOffset) in enumerate(refTuples):
+        
+        if PRA.lower() == 'opt':
+            futureSeq = [pn for _, pn, _ in refTuples[n+1:]]
 
         # check TLB
+        frameNumber = -1 
         frameNumber = tlb.idx(pageNumber)
         if frameNumber == -1: 
             numTLBMisses += 1
@@ -273,6 +306,8 @@ def main():
                     frameNumber = physMem.load_page_fifo(pageNumber, page, pageTable, tlb)
                 elif PRA.lower() == 'lru': 
                     frameNumber = physMem.load_page_lru(pageNumber, page, pageTable, tlb)
+                elif PRA.lower() == 'opt': 
+                    frameNumber = physMem.load_page_opt(pageNumber, page, futureSeq, pageTable, tlb)
 
             tlb.add_entry(pageNumber, frameNumber)
 
@@ -280,12 +315,12 @@ def main():
             physMem.record_access(pageNumber)
 
         print('{}, {}, {}, {}'.format(virtualAddr, value, frameNumber, format_byte_arr(page)))
-    print('Number of Translated Addresses = {}'.format(n))
+    print('Number of Translated Addresses = {}'.format(n+1))
     print('Page Faults = {}'.format(numFaults))
-    print('Page Fault Rate = {:.3f}'.format(numFaults / n))
-    print('TLB Hits = {}'.format(n - numTLBMisses))
+    print('Page Fault Rate = {:.3f}'.format(numFaults / (n+1)))
+    print('TLB Hits = {}'.format((n+1) - numTLBMisses))
     print('TLB Misses = {}'.format(numTLBMisses))
-    print('TLB Hit Rate = {:.3f}\n'.format((n - numTLBMisses) / n))
+    print('TLB Hit Rate = {:.3f}\n'.format(((n+1) - numTLBMisses) / (n+1)))
 
 if __name__ == '__main__':
     main()
