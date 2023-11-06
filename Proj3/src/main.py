@@ -163,7 +163,7 @@ class PhysicalMemory:
         tlb.remove_entry(replaced_page_number)
         pageTable.update_entry(pageNumber, frame_to_replace, True)
 
-        return frame_to_replace
+        return replaced_page_number
     
     def find_free(self):
         for index, frame in enumerate(self.frames):
@@ -277,15 +277,18 @@ def main():
     bs.load()
 
     # ----- memory access process with TLB
+    n = 0
     numFaults = 0
     numTLBMisses = 0
 
     refTuples = [(virtualAddr, *split_virtual(virtualAddr)) for virtualAddr in refSeq]
-
-    for n, (virtualAddr, pageNumber, frameOffset) in enumerate(refTuples):
+    
+    for virtualAddr, pageNumber, frameOffset in refTuples: 
+        n += 1
+        frameNumber = -1 
         
         if PRA.lower() == 'opt':
-            futureSeq = [pn for _, pn, _ in refTuples[n+1:]]
+            futureSeq = [pn for _, pn, _ in refTuples[n:]]
 
         # check TLB
         frameNumber = -1 
@@ -315,12 +318,12 @@ def main():
             physMem.record_access(pageNumber)
 
         print('{}, {}, {}, {}'.format(virtualAddr, value, frameNumber, format_byte_arr(page)))
-    print('Number of Translated Addresses = {}'.format(n+1))
+    print('Number of Translated Addresses = {}'.format(n))
     print('Page Faults = {}'.format(numFaults))
-    print('Page Fault Rate = {:.3f}'.format(numFaults / (n+1)))
-    print('TLB Hits = {}'.format((n+1) - numTLBMisses))
+    print('Page Fault Rate = {:.3f}'.format(numFaults / n))
+    print('TLB Hits = {}'.format(n - numTLBMisses))
     print('TLB Misses = {}'.format(numTLBMisses))
-    print('TLB Hit Rate = {:.3f}\n'.format(((n+1) - numTLBMisses) / (n+1)))
+    print('TLB Hit Rate = {:.3f}\n'.format((n - numTLBMisses) / n))
 
 if __name__ == '__main__':
     main()
