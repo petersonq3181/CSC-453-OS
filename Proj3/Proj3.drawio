@@ -1,6 +1,6 @@
-<mxfile host="Electron" modified="2023-11-02T06:20:05.897Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.8 Chrome/114.0.5735.289 Electron/25.5.0 Safari/537.36" etag="1FHCOeAukvabUKV6S2bA" version="21.6.8" type="device">
+<mxfile host="Electron" modified="2023-11-06T02:39:32.138Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.8 Chrome/114.0.5735.289 Electron/25.5.0 Safari/537.36" etag="ZkMk2IMODvcNzXVwTQAy" version="21.6.8" type="device">
   <diagram name="Page-1" id="uFjbVwBRzTg2HjKh1sFf">
-    <mxGraphModel dx="795" dy="562" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="413" pageHeight="583" math="0" shadow="0">
+    <mxGraphModel dx="830" dy="586" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="413" pageHeight="583" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -55,10 +55,10 @@
         <mxCell id="A26lTRIPWJ14qP6lIxev-20" value="page # = 8 bis b/c 2&lt;sup&gt;8&lt;/sup&gt;&amp;nbsp;= 256 = # entries in page table" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="A26lTRIPWJ14qP6lIxev-21" vertex="1">
           <mxGeometry x="20" y="70" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="WJtbwOGgOCRzTVorPWWC-2" value="65536 bytes (ie. 256 * 256)&amp;nbsp;" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" vertex="1" parent="1">
+        <mxCell id="WJtbwOGgOCRzTVorPWWC-2" value="65536 bytes (ie. 256 * 256)&amp;nbsp;" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;" parent="1" vertex="1">
           <mxGeometry x="640" y="375" width="20" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="WJtbwOGgOCRzTVorPWWC-3" value="Backing Store&lt;br&gt;-----------------------&lt;br&gt;Every 2&lt;sup&gt;8&lt;/sup&gt;&amp;nbsp;= 256 Bytes is a page&lt;br&gt;-----------------------" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="WJtbwOGgOCRzTVorPWWC-3" value="Backing Store&lt;br&gt;-----------------------&lt;br&gt;Every 2&lt;sup&gt;8&lt;/sup&gt;&amp;nbsp;= 256 Bytes is a page&lt;br&gt;-----------------------" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="670" y="340" width="120" height="190" as="geometry" />
         </mxCell>
       </root>
