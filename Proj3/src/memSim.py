@@ -117,7 +117,7 @@ class PhysicalMemory:
 
         return lruFrameIdx
     
-    def load_page_opt(self, pageNumber, content, future_references, pageTable, tlb):
+    def load_page_opt(self, pageNumber, content, futureRefs, pageTable, tlb):
         freeIdx = self.find_free()
 
         if freeIdx != -1:
@@ -126,28 +126,22 @@ class PhysicalMemory:
             pageTable.update_entry(pageNumber, freeIdx, True)
             return freeIdx
 
-        farthest = -1
-        toReplace = None
+        if futureRefs:
+            pageIdx = futureRefs[-1]
 
-        for frame in self.frames:
-            try:
-                index = future_references.index(frame['pageNumber'])
-            except ValueError:
-                toReplace = frame
-                break
-            if index > farthest:
-                farthest = index
-                toReplace = frame
+            frameIdx = 0 
+            for i, f in enumerate(self.frames):
+                if f['pageNumber'] == pageIdx:
+                    frameIdx = i
+        else: 
+            frameIdx = 0
+            pageIdx = self.frames[frameIdx]['pageNumber']
+        
+        pageTable.update_entry(pageIdx, -1, False)
+        tlb.remove_entry(pageIdx)
+        pageTable.update_entry(pageNumber, frameIdx, True)
 
-        replacedPageNumber = toReplace['pageNumber']
-        toReplace['content'] = content
-        toReplace['pageNumber'] = pageNumber
-
-        pageTable.update_entry(replacedPageNumber, -1, False)
-        tlb.remove_entry(replacedPageNumber)
-        pageTable.update_entry(pageNumber, toReplace, True)
-
-        return replacedPageNumber
+        return frameIdx
     
     def find_free(self):
         for index, frame in enumerate(self.frames):
