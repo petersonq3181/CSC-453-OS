@@ -4,12 +4,12 @@ import random
 NUM_CYLS = 5000
 NUM_RAND_REQS = 100
 
-def read_sequence(fn):
-    refSeq = [] 
+def read_seq(fn):
+    seq = [] 
     try:
         with open(fn, 'r') as file:
             for line in file:
-                refSeq.append(int(line.strip()))
+                seq.append(int(line.strip()))
     except FileNotFoundError:
         print(f'Error: The file {fn} was not found')
         sys.exit(1)
@@ -17,10 +17,11 @@ def read_sequence(fn):
         print(f'Error: Problem converting a line to an integer: {e}')
         sys.exit(1)
 
-    return refSeq
+    return seq
 
-def generate_random_sequence():
-    pass
+def gen_rand_seq():
+    seq = [random.randint(0, NUM_CYLS - 1) for _ in range(NUM_RAND_REQS)]
+    return seq
 
 def fcfs(seq, pos):
     pass
@@ -50,7 +51,7 @@ def main():
     initPos = abs(initPos)
 
     fn = sys.argv[2] if len(sys.argv) > 2 else None
-    sequence = read_sequence(fn) if fn else generate_random_sequence()
+    sequence = read_seq(fn) if fn else gen_rand_seq()
 
     # temp for debugging
     print('initPos:\t', initPos, '\ndirection:\t', direction, '\nfn:\t\t', fn)
