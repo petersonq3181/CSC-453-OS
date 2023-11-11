@@ -140,8 +140,29 @@ def look(seq, pos, direction):
             pos = req
     return dist
 
-def clook(seq, pos, direction):
-    pass
+def clook(seq, pos):
+    dist = 0
+
+    lowerReqs = [req for req in seq if req < pos]
+    lowerReqs.sort(reverse=True)
+
+    upperReqs = [req for req in seq if req >= pos]
+    upperReqs.sort()
+
+    for req in upperReqs:
+        dist += abs(req - pos)
+        pos = req
+
+    if lowerReqs:
+        dist += abs(lowerReqs[0] - pos)
+        pos = lowerReqs[0]
+
+    for req in reversed(lowerReqs):
+        dist += abs(req - pos)
+        pos = req
+
+    return dist
+
 
 def main():
     if len(sys.argv) < 2:
@@ -165,7 +186,7 @@ def main():
     print('SCAN', scan(sequence, initPos, direction))
     print('C-SCAN', cscan(sequence, initPos, direction))
     print('LOOK', look(sequence, initPos, direction))
-    print('C-LOOK', clook(sequence, initPos, direction))
+    print('C-LOOK', clook(sequence, initPos))
 
 if __name__ == '__main__':
     main()
