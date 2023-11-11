@@ -5,7 +5,19 @@ NUM_CYLS = 5000
 NUM_RAND_REQS = 100
 
 def read_sequence(fn):
-    pass
+    refSeq = [] 
+    try:
+        with open(fn, 'r') as file:
+            for line in file:
+                refSeq.append(int(line.strip()))
+    except FileNotFoundError:
+        print(f'Error: The file {fn} was not found')
+        sys.exit(1)
+    except ValueError as e:
+        print(f'Error: Problem converting a line to an integer: {e}')
+        sys.exit(1)
+
+    return refSeq
 
 def generate_random_sequence():
     pass
@@ -42,6 +54,8 @@ def main():
 
     # temp for debugging
     print('initPos:\t', initPos, '\ndirection:\t', direction, '\nfn:\t\t', fn)
+    print('sequence: ', sequence)
+    print()
 
     print('FCFS', fcfs(sequence, initPos))
     print('SSTF', sstf(sequence, initPos))
