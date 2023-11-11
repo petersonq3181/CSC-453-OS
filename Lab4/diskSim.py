@@ -24,10 +24,22 @@ def gen_rand_seq():
     return seq
 
 def fcfs(seq, pos):
-    pass
+    dist = 0 
+    for ele in seq:
+        dist += abs(pos - ele)
+        pos = ele
+    return dist 
 
 def sstf(seq, pos):
-    pass
+    dist = 0
+    sequence = seq.copy()
+
+    while sequence:
+        nxt = min(sequence, key=lambda i: abs(i - pos))
+        dist += abs(nxt - pos)
+        pos = nxt 
+        sequence.remove(nxt) 
+    return dist
 
 def scan(seq, pos, direction):
     pass
