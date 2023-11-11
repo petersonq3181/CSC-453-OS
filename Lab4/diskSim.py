@@ -106,7 +106,39 @@ def cscan(seq, pos, direction):
     return dist
 
 def look(seq, pos, direction):
-    pass
+    dist = 0
+
+    lowerReqs = [req for req in seq if req < pos]
+    lowerReqs.sort(reverse=True)
+
+    upperReqs = [req for req in seq if req >= pos]
+    upperReqs.sort()
+
+    if direction <= 0:
+        for req in lowerReqs:
+            dist += abs(req - pos)
+            pos = req
+
+        if upperReqs:
+            dist += abs(pos - upperReqs[0])
+            pos = upperReqs[0]
+
+        for req in upperReqs:
+            dist += abs(req - pos)
+            pos = req
+    else:
+        for req in upperReqs:
+            dist += abs(req - pos)
+            pos = req
+
+        if lowerReqs:
+            dist += abs(pos - lowerReqs[0])
+            pos = lowerReqs[0]
+
+        for req in lowerReqs:
+            dist += abs(req - pos)
+            pos = req
+    return dist
 
 def clook(seq, pos, direction):
     pass
