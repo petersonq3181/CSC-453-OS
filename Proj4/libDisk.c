@@ -93,9 +93,35 @@ int openDisk(char *filename, int nBytes) {
     return diskNum;
 }
 
-
 int closeDisk(int disk) {
+    /* find disk */
+    int i;
+    int found = -1;
+    for (i = 0; i < MAX_DISKS; i++) {
+        if (disk == openDisk[i].fd) {
+            found = i;
+            break;
+        }
+    }
 
+    if (found == -1) {
+        /* TODO errno for no disk found */
+        return -1;
+    }
+    
+    /* close the file */
+    if (close(openDisk[i].fd) == -1) {
+        /* TODO errno for close failure */
+        return -1;
+    } 
+
+    /* "remove" from openDisks list */
+    openDisks[i].fd = 0;
+    strncpy(openDisks[i].filename, "\0", FILENAME_MAX);
+    openDisks[i].size = 0;
+    openDisks[i].isOpen = 0;
+
+    return 0;
 }
 
 
