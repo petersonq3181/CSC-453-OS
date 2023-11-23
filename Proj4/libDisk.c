@@ -154,9 +154,29 @@ int closeDisk(int disk) {
     return -1;
 }
 
-
 int readBlock(int disk, int bNum, void *block) {
+    DiskLL *cur = diskHead;
+    while (cur != NULL) {
+        if (cur->id == disk) {
+            break;
+        }
+        cur = cur->next;
+    }
 
+    if (cur == NULL) {
+        /* TODO errno */
+        return -1;
+    }
+
+    off_t offset = (off_t)bNum * BLOCKSIZE;
+
+    ssize_t bytesRead = pread(cur->fd, block, BLOCKSIZE, offset);
+    if (bytesRead == -1 || bytesRead < BLOCKSIZE) {
+        /* TODO errno */
+        return -1;
+    }
+
+    return 0;
 }
 
 
