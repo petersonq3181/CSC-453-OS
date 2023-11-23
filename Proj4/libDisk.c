@@ -11,6 +11,7 @@
 int idCount = 0; 
 DiskLL* diskHead = NULL;
 
+/* for myself for testing */
 void printLinkedList(DiskLL *head) {
     DiskLL *current = head;
     while (current != NULL) {
@@ -109,6 +110,12 @@ int openDisk(char *filename, int nBytes) {
     }
     
     int out = cur->id;
+
+    /* attempt to close the file */
+    if (close(fd) == -1) {
+        /* TODO errno */
+        return -1;
+    }
 
     printf("openDisk() Success!\n\t diskNum: %d \n\t filename: %s \n\t nBytes: %d \n\t foundCase1: %d \n\t foundCase2: %d \n"
     , out, filename, nBytes, foundCase1, foundCase2);
