@@ -51,7 +51,6 @@ int openDisk(char *filename, int nBytes) {
 
             /* overwrite */
             /* TODO figure out how to do this; could remove the file and make a new one */
-            printf("got here ee\n");
 
             break;
         }
@@ -93,6 +92,7 @@ int openDisk(char *filename, int nBytes) {
         new->id = idCount;
         idCount++; 
         new->filename = filename;
+        new->fd = fd;
         new->next = NULL; 
 
         if (diskHead == NULL) {
@@ -125,45 +125,33 @@ int openDisk(char *filename, int nBytes) {
 }
 
 int closeDisk(int disk) {
-
-    /* find disk */
     /*
-    int i;
-    int found = -1;
-    for (i = 0; i < MAX_DISKS; i++) {
-        if (disk == openDisk[i].fd) {
-            found = i;
-            break;
+    find disk
+    deallocate disk struct(s)
+    free from linked list 
+    if not found err
+    */
+
+    DiskLL *cur = diskHead;
+    DiskLL *prev = NULL;
+    while (cur != NULL) {
+        if (cur->id == disk) {
+            if (prev == NULL) {
+                diskHead = cur->next;
+            } else {
+                prev->next = cur->next;
+            }
+            
+            free(cur);
+            return 0;
         }
+        
+        prev = cur;
+        cur = cur->next;
     }
-    */
 
-    /*
-    if (found == -1) {
-        */
-        /* TODO errno for no disk found */
-        /*
-        return -1;
-    }
-    */
-    
-    
-    /* close the file */
-    /* 
-    if (close(openDisk[i].fd) == -1) {
-        return -1;
-    } 
-    */
-
-    /* "remove" from openDisks list */
-    /*
-    openDisks[i].fd = 0;
-    strncpy(openDisks[i].filename, "\0", FILENAME_MAX);
-    openDisks[i].size = 0;
-    openDisks[i].isOpen = 0;
-    */
-
-    return 0;
+    /* TODO errno */
+    return -1;
 }
 
 
@@ -182,17 +170,23 @@ int main(int argc, char** argv) {
     /* ------ self testing of openDisk() */
 
     /* 1. if the disk does not already exist, make a new one */
-    int fd;
-    fd = openDisk("file.txt", 334);
+    int diskNum;
+    diskNum = openDisk("file.txt", 334);
 
     /* 2. if nBytes > BLOCKSIZE and there is already a file by the given filename */
-    fd = openDisk("file.txt", 700);
+    diskNum = openDisk("file.txt", 700);
 
     /* 3.a if nBytes is 0, an existing disk is opened, and the content must not be overwritten in this function */
-    fd = openDisk("file.txt", 0);
+    diskNum = openDisk("file.txt", 0);
     /* 3.b if nBytes is 0, and no existing disk */
-    fd = openDisk("gg.txt", 0);
+    diskNum = openDisk("gg.txt", 0);
+     
+    /* additional testing w/ closeDisk */
+    diskNum = openDisk("a.txt", 800);
+    diskNum = openDisk("b.txt", 300);
 
+    int res = closeDisk(1);
+    diskNum = openDisk("c.txt", 1110);
 
 
 
