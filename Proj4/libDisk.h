@@ -1,6 +1,16 @@
 #ifndef LIBDISK_H
 #define LIBDISK_H
 
+#include <stdio.h>
+
+typedef struct DiskLL {
+    int id;
+    int fd;
+    char *filename;
+    struct DiskLL *next;
+} DiskLL;
+
+extern DiskLL* diskHead;
 
 int openDisk(char *filename, int nBytes);
 /* This functions opens a regular UNIX file and designates the first nBytes of it as space for the emulated disk. If nBytes is not exactly a multiple of BLOCKSIZE then the disk size will be the closest multiple of BLOCKSIZE that is lower than nByte (but greater than 0) If nBytes is less than BLOCKSIZE failure should be returned. If nBytes > BLOCKSIZE and there is already a file by the given filename, that file’s content may be overwritten. If nBytes is 0, an existing disk is opened, and the content must not be overwritten in this function. There is no requirement to maintain integrity of any file content beyond nBytes. The return value is negative on failure or a disk number on success. */
