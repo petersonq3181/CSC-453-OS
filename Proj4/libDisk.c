@@ -11,6 +11,14 @@
 int idCount = 0; 
 DiskLL* diskHead = NULL;
 
+void printLinkedList(DiskLL *head) {
+    DiskLL *current = head;
+    while (current != NULL) {
+        printf("ID: %d, FD: %d, Filename: %s\n", current->id, current->fd, current->filename ? current->filename : "NULL");
+        current = current->next;
+    }
+}
+
 int openDisk(char *filename, int nBytes) {
 
     /* check nBytes is greater than BLOCKSIZE */
@@ -42,7 +50,7 @@ int openDisk(char *filename, int nBytes) {
 
             /* overwrite */
             /* TODO figure out how to do this; could remove the file and make a new one */
-
+            printf("got here ee\n");
 
             break;
         }
@@ -67,6 +75,7 @@ int openDisk(char *filename, int nBytes) {
         /* nBytes is 0 and no disk exists with the given filename; return error */
         if (!foundCase2) {
             /* TODO errno */
+            printf("got to this case 11\n");
             return -1; 
         }
     }
@@ -99,7 +108,13 @@ int openDisk(char *filename, int nBytes) {
         cur = new;
     }
     
-    return cur->id; 
+    int out = cur->id;
+
+    printf("openDisk() Success!\n\t diskNum: %d \n\t filename: %s \n\t nBytes: %d \n\t foundCase1: %d \n\t foundCase2: %d \n"
+    , out, filename, nBytes, foundCase1, foundCase2);
+    printLinkedList(diskHead);
+    
+    return out; 
 }
 
 int closeDisk(int disk) {
@@ -157,11 +172,22 @@ int writeBlock(int disk, int bNum, void *block) {
 /* TODO: delete; temp for testing */
 int main(int argc, char** argv) {
 
+    /* ------ self testing of openDisk() */
+
+    /* 1. if the disk does not already exist, make a new one */
     int fd;
     fd = openDisk("file.txt", 334);
 
-    printf("got here\n");
-    printf("fd: %d\n", fd);
+    /* 2. if nBytes > BLOCKSIZE and there is already a file by the given filename */
+    fd = openDisk("file.txt", 700);
+
+    /* 3.a if nBytes is 0, an existing disk is opened, and the content must not be overwritten in this function */
+    fd = openDisk("file.txt", 0);
+    /* 3.b if nBytes is 0, and no existing disk */
+    fd = openDisk("gg.txt", 0);
+
+
+
 
     return 0;
 }
