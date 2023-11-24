@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "libDisk.h"
@@ -174,18 +175,42 @@ int readBlock(int disk, int bNum, void *block) {
         return -1;
     }
 
+    /* open the file */
+    int fd = open(cur->filename, O_RDONLY);
+    if (fd == -1) {
+        /* TODO errno */
+        printf("entered readBlock error: unable to open file\n");
+        return -1;
+    }
+
     off_t offset = (off_t) bNum * BLOCKSIZE;
 
-    ssize_t bytesRead = pread(cur->fd, block, BLOCKSIZE, offset);
+    ssize_t bytesRead = pread(fd, block, BLOCKSIZE, offset);
     if (bytesRead == -1 || bytesRead < BLOCKSIZE) {
+        fprintf(stderr, "pread failed: %s\n", strerror(errno));
+
+
         /* TODO errno */
+        if (close(fd) == -1) {
+            printf("Error closing file '%s'\n", cur->filename);
+            return 1;
+        }
         return -1;
+    }
+
+    if (close(fd) == -1) {
+        printf("Error closing file '%s'\n", cur->filename);
+        return 1;
     }
 
     return 0;
 }
 
 int writeBlock(int disk, int bNum, void *block) {
+    printf("entered writeBlock\n");
+    printf("\t disk: %d, bNum: %d\n", disk, bNum);
+    fflush(stdout);
+
     DiskLL *cur = diskHead;
     while (cur != NULL) {
         if (cur->id == disk) {
@@ -196,14 +221,36 @@ int writeBlock(int disk, int bNum, void *block) {
 
     if (cur == NULL) {
         /* TODO errno */
+        printf("entered writeBlock error 1\n");
+        return -1;
+    }
+
+    /* open the file */
+    int fd = open(cur->filename, O_WRONLY);
+    if (fd == -1) {
+        /* TODO errno */
+        printf("entered writeBlock error: unable to open file\n");
         return -1;
     }
 
     off_t offset = (off_t) bNum * BLOCKSIZE;
 
-    ssize_t bytesWritten = pwrite(cur->fd, block, BLOCKSIZE, offset);
+    ssize_t bytesWritten = pwrite(fd, block, BLOCKSIZE, offset);
     if (bytesWritten == -1 || bytesWritten < BLOCKSIZE) {
         /* TODO errno */
+        printf("entered writeBlock error 2\n");
+
+        if (close(fd) == -1) {
+            printf("entered writeBlock error: unable to close file\n");
+            return -1;
+        }
+
+        return -1;
+    }
+
+    if (close(fd) == -1) {
+        /* TODO errno */
+        printf("entered writeBlock error: unable to close file\n");
         return -1;
     }
 
@@ -233,6 +280,17 @@ int writeBlock(int disk, int bNum, void *block) {
 
 //     closeDisk(1);
 //     diskNum = openDisk("c.txt", 1110);
+
+//     char *buffer;
+//     buffer = malloc(BLOCKSIZE * sizeof(char));
+//     memset(buffer,'$',BLOCKSIZE);
+//     // retValue = writeBlock(disks[index],ctestBlocks[index2],buffer);
+//     int gg = writeBlock(2, 2, buffer);
+
+//     char *readBuff;
+//     readBuff = malloc(BLOCKSIZE * sizeof(char));
+//     int res = readBlock(2, 2, readBuff);
+    
 
 //     return 0;
 // }
