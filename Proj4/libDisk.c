@@ -155,6 +155,12 @@ int closeDisk(int disk) {
 }
 
 int readBlock(int disk, int bNum, void *block) {
+    /* TODO how to handle 
+    - the specified disk does not exist / isn't configured 
+    - offset into file is out of range (could put in pread error conditional)
+    */
+
+
     DiskLL *cur = diskHead;
     while (cur != NULL) {
         if (cur->id == disk) {
@@ -168,7 +174,7 @@ int readBlock(int disk, int bNum, void *block) {
         return -1;
     }
 
-    off_t offset = (off_t)bNum * BLOCKSIZE;
+    off_t offset = (off_t) bNum * BLOCKSIZE;
 
     ssize_t bytesRead = pread(cur->fd, block, BLOCKSIZE, offset);
     if (bytesRead == -1 || bytesRead < BLOCKSIZE) {
@@ -179,9 +185,29 @@ int readBlock(int disk, int bNum, void *block) {
     return 0;
 }
 
-
 int writeBlock(int disk, int bNum, void *block) {
+    DiskLL *cur = diskHead;
+    while (cur != NULL) {
+        if (cur->id == disk) {
+            break;
+        }
+        cur = cur->next;
+    }
 
+    if (cur == NULL) {
+        /* TODO errno */
+        return -1;
+    }
+
+    off_t offset = (off_t) bNum * BLOCKSIZE;
+
+    ssize_t bytesWritten = pwrite(cur->fd, block, BLOCKSIZE, offset);
+    if (bytesWritten == -1 || bytesWritten < BLOCKSIZE) {
+        /* TODO errno */
+        return -1;
+    }
+
+    return 0;
 }
 
 /* TODO: delete; temp for testing */
