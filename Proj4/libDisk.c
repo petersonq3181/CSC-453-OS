@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include "libDisk.h"
 #include "tinyFS.h"
-#include "tinyFS_errno.h"
+#include "TinyFS_errno.h"
 
 int idCount = 0; 
 DiskLL* diskHead = NULL;
@@ -210,31 +210,29 @@ int writeBlock(int disk, int bNum, void *block) {
     return 0;
 }
 
-/* TODO: delete; temp for testing */
-int main(int argc, char** argv) {
+// /* TODO: delete; temp for testing */
+// int main(int argc, char** argv) {
 
-    /* ------ self testing of openDisk() */
+//     /* ------ self testing of openDisk() */
 
-    /* 1. if the disk does not already exist, make a new one */
-    int diskNum;
-    diskNum = openDisk("file.txt", 334);
+//     /* 1. if the disk does not already exist, make a new one */
+//     int diskNum;
+//     diskNum = openDisk("file.txt", 334);
 
-    /* 2. if nBytes > BLOCKSIZE and there is already a file by the given filename */
-    diskNum = openDisk("file.txt", 700);
+//     /* 2. if nBytes > BLOCKSIZE and there is already a file by the given filename */
+//     diskNum = openDisk("file.txt", 700);
 
-    /* 3.a if nBytes is 0, an existing disk is opened, and the content must not be overwritten in this function */
-    diskNum = openDisk("file.txt", 0);
-    /* 3.b if nBytes is 0, and no existing disk */
-    diskNum = openDisk("gg.txt", 0);
+//     /* 3.a if nBytes is 0, an existing disk is opened, and the content must not be overwritten in this function */
+//     diskNum = openDisk("file.txt", 0);
+//     /* 3.b if nBytes is 0, and no existing disk */
+//     diskNum = openDisk("gg.txt", 0);
      
-    /* additional testing w/ closeDisk */
-    diskNum = openDisk("a.txt", 800);
-    diskNum = openDisk("b.txt", 300);
+//     /* additional testing w/ closeDisk */
+//     diskNum = openDisk("a.txt", 800);
+//     diskNum = openDisk("b.txt", 300);
 
-    int res = closeDisk(1);
-    diskNum = openDisk("c.txt", 1110);
+//     closeDisk(1);
+//     diskNum = openDisk("c.txt", 1110);
 
-
-
-    return 0;
-}
+//     return 0;
+// }
