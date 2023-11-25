@@ -78,6 +78,10 @@ int tfs_mkfs(char *filename, int nBytes) {
 }
 
 int tfs_mount(char *diskname) {
+
+    /* attempt to unmount any currently mounted system */
+    int unmounted = tfs_unmount();
+
     int fd;
     fd = open(diskname, O_RDONLY);
     if (fd == -1) {
@@ -129,7 +133,12 @@ int tfs_mount(char *diskname) {
 }
 
 int tfs_unmount(void) {
+    if (curDisk == NULL) {
+        return -1;
+    }
 
+    curDisk = NULL;
+    return 0; 
 }
 
 /* TODO temp for testing */
