@@ -16,7 +16,7 @@ DiskLL* diskHead = NULL;
 void printLinkedList(DiskLL *head) {
     DiskLL *current = head;
     while (current != NULL) {
-        printf("ID: %d, FD: %d, Filename: %s\n", current->id, current->fd, current->filename ? current->filename : "NULL");
+        printf("ID: %d, Filename: %s\n", current->id, current->filename ? current->filename : "NULL");
         current = current->next;
     }
 }
@@ -40,15 +40,6 @@ int openDisk(char *filename, int nBytes) {
         perror("Error opening file");
         return -1;
     }
-    char zero = 0;
-    int i;
-    for (i = 0; i < nBytes; ++i) {
-        if (fwrite(&zero, 1, 1, file) != 1) {
-            fclose(file);
-            return -1;
-        }
-    }
-    int fd = 123;
 
     /* if nBytes > BLOCKSIZE and there is already a file by the given filename, 
     * that file’s content may be overwritten (cur)
@@ -75,8 +66,6 @@ int openDisk(char *filename, int nBytes) {
         cur = diskHead;
         
         while (cur != NULL) {
-            printf("entered hereee: %s %s\n", cur->filename, filename);
-            printLinkedList(diskHead);
             if (strcmp(cur->filename, filename) == 0) {
                 foundCase2 = 1;
                 break;
@@ -90,8 +79,6 @@ int openDisk(char *filename, int nBytes) {
             return -1; 
         }
     }
-
-    printf("FOUNDCASE 1 and 2 %d %d\n", foundCase1, foundCase2);
 
     /* if the disk does not already exist, make a new one */
     if (!foundCase1 && !foundCase2) {
@@ -111,8 +98,6 @@ int openDisk(char *filename, int nBytes) {
             return -1;
         }
         strcpy(new->filename, filename);
-
-        new->fd = fd;
         new->next = NULL; 
 
         if (diskHead == NULL) {
@@ -134,11 +119,11 @@ int openDisk(char *filename, int nBytes) {
     /* attempt to close the file */
     fclose(file);
 
-    
+    /*
     printf("openDisk() Success!\n\t diskNum: %d \n\t filename: %s \n\t nBytes: %d \n\t foundCase1: %d \n\t foundCase2: %d \n"
     , out, filename, nBytes, foundCase1, foundCase2);
     printLinkedList(diskHead);
-    
+    */
     
     return out; 
 }

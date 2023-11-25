@@ -5,7 +5,6 @@
 
 typedef struct DiskLL {
     int id;
-    int fd;
     char *filename;
     struct DiskLL *next;
 } DiskLL;
