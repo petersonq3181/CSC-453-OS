@@ -35,11 +35,20 @@ int openDisk(char *filename, int nBytes) {
     }
     
     /* attempt open the file */
-    int fd; 
-    fd = open(filename, O_RDWR | O_CREAT, 0600);
-    if (fd == -1) {
-        return -1; 
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
+        perror("Error opening file");
+        return -1;
     }
+    char zero = 0;
+    int i;
+    for (i = 0; i < nBytes; ++i) {
+        if (fwrite(&zero, 1, 1, file) != 1) {
+            fclose(file);
+            return -1;
+        }
+    }
+    int fd = 123;
 
     /* if nBytes > BLOCKSIZE and there is already a file by the given filename, 
     * that file’s content may be overwritten (cur)
@@ -76,7 +85,6 @@ int openDisk(char *filename, int nBytes) {
         /* nBytes is 0 and no disk exists with the given filename; return error */
         if (!foundCase2) {
             /* TODO errno */
-            printf("got to this case 11\n");
             return -1; 
         }
     }
@@ -113,10 +121,7 @@ int openDisk(char *filename, int nBytes) {
     int out = cur->id;
 
     /* attempt to close the file */
-    if (close(fd) == -1) {
-        /* TODO errno */
-        return -1;
-    }
+    fclose(file);
 
     printf("openDisk() Success!\n\t diskNum: %d \n\t filename: %s \n\t nBytes: %d \n\t foundCase1: %d \n\t foundCase2: %d \n"
     , out, filename, nBytes, foundCase1, foundCase2);

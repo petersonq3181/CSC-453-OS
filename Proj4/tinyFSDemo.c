@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "tinyFS.h"
-#include "tinyFS_errno.h"
+#include "TinyFS_errno.h"
 
 int main(int argc, char **argv) {
 
