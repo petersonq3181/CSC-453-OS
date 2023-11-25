@@ -191,7 +191,7 @@ int readBlock(int disk, int bNum, void *block) {
     off_t offset = (off_t) bNum * BLOCKSIZE;
 
     ssize_t bytesRead = pread(fd, block, BLOCKSIZE, offset);
-    if (bytesRead == -1 || bytesRead < BLOCKSIZE) {
+    if (bytesRead == -1) {
         fprintf(stderr, "pread failed: %s\n", strerror(errno));
 
 
