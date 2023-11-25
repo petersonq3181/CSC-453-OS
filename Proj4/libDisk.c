@@ -75,6 +75,8 @@ int openDisk(char *filename, int nBytes) {
         cur = diskHead;
         
         while (cur != NULL) {
+            printf("entered hereee: %s %s\n", cur->filename, filename);
+            printLinkedList(diskHead);
             if (strcmp(cur->filename, filename) == 0) {
                 foundCase2 = 1;
                 break;
@@ -89,6 +91,8 @@ int openDisk(char *filename, int nBytes) {
         }
     }
 
+    printf("FOUNDCASE 1 and 2 %d %d\n", foundCase1, foundCase2);
+
     /* if the disk does not already exist, make a new one */
     if (!foundCase1 && !foundCase2) {
 
@@ -100,7 +104,14 @@ int openDisk(char *filename, int nBytes) {
         
         new->id = idCount;
         idCount++; 
-        new->filename = filename;
+        
+        new->filename = (char *) malloc(strlen(filename) + 1);
+        if (new->filename == NULL) {
+            free(new);
+            return -1;
+        }
+        strcpy(new->filename, filename);
+
         new->fd = fd;
         new->next = NULL; 
 
@@ -123,9 +134,11 @@ int openDisk(char *filename, int nBytes) {
     /* attempt to close the file */
     fclose(file);
 
+    
     printf("openDisk() Success!\n\t diskNum: %d \n\t filename: %s \n\t nBytes: %d \n\t foundCase1: %d \n\t foundCase2: %d \n"
     , out, filename, nBytes, foundCase1, foundCase2);
     printLinkedList(diskHead);
+    
     
     return out; 
 }
@@ -212,10 +225,6 @@ int readBlock(int disk, int bNum, void *block) {
 }
 
 int writeBlock(int disk, int bNum, void *block) {
-    printf("entered writeBlock\n");
-    printf("\t disk: %d, bNum: %d\n", disk, bNum);
-    fflush(stdout);
-
     DiskLL *cur = diskHead;
     while (cur != NULL) {
         if (cur->id == disk) {
