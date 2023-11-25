@@ -22,6 +22,7 @@ void printLinkedList(DiskLL *head) {
         current = current->next;
     }
 }
+
 /* helper */
 int fileExists(char *filename) {
     DIR *dir;
@@ -292,41 +293,3 @@ int writeBlock(int disk, int bNum, void *block) {
 
     return 0;
 }
-
-// /* TODO: delete; temp for testing */
-// int main(int argc, char** argv) {
-
-//     /* ------ self testing of openDisk() */
-
-//     /* 1. if the disk does not already exist, make a new one */
-//     int diskNum;
-//     diskNum = openDisk("file.txt", 334);
-
-//     /* 2. if nBytes > BLOCKSIZE and there is already a file by the given filename */
-//     diskNum = openDisk("file.txt", 700);
-
-//     /* 3.a if nBytes is 0, an existing disk is opened, and the content must not be overwritten in this function */
-//     diskNum = openDisk("file.txt", 0);
-//     /* 3.b if nBytes is 0, and no existing disk */
-//     diskNum = openDisk("gg.txt", 0);
-     
-//     /* additional testing w/ closeDisk */
-//     diskNum = openDisk("a.txt", 800);
-//     diskNum = openDisk("b.txt", 300);
-
-//     closeDisk(1);
-//     diskNum = openDisk("c.txt", 1110);
-
-//     char *buffer;
-//     buffer = malloc(BLOCKSIZE * sizeof(char));
-//     memset(buffer,'$',BLOCKSIZE);
-//     // retValue = writeBlock(disks[index],ctestBlocks[index2],buffer);
-//     int gg = writeBlock(2, 2, buffer);
-
-//     char *readBuff;
-//     readBuff = malloc(BLOCKSIZE * sizeof(char));
-//     int res = readBlock(2, 2, readBuff);
-    
-
-//     return 0;
-// }
