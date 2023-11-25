@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <sys/types.h> 
 #include <fcntl.h>
 #include "libDisk.h"
 #include "tinyFS.h"
@@ -20,6 +22,27 @@ void printLinkedList(DiskLL *head) {
         current = current->next;
     }
 }
+/* helper */
+int fileExists(char *filename) {
+    DIR *dir;
+    struct dirent *myDir;
+
+    dir = opendir("."); 
+    if (dir == NULL) {
+        perror("opendir");
+        return -1; 
+    }
+
+    while ((myDir = readdir(dir)) != NULL) {
+        if (strcmp(myDir->d_name, filename) == 0) {
+            closedir(dir);
+            return 1; 
+        }
+    }
+
+    closedir(dir);
+    return 0; 
+}
 
 int openDisk(char *filename, int nBytes) {
 
@@ -34,13 +57,6 @@ int openDisk(char *filename, int nBytes) {
         nBytes -= nBytes % BLOCKSIZE;
     }
     
-    /* attempt open the file */
-    FILE *file = fopen(filename, "wb");
-    if (!file) {
-        perror("Error opening file");
-        return -1;
-    }
-
     /* if nBytes > BLOCKSIZE and there is already a file by the given filename, 
     * that file’s content may be overwritten (cur)
     */
@@ -62,9 +78,18 @@ int openDisk(char *filename, int nBytes) {
     * the content must not be overwritten in this function
     */
     int foundCase2 = 0;
+    int foundCase3 = 0;
     if (nBytes == 0) {
-        cur = diskHead;
         
+        /* search the file space
+        given the file does turn out to exist:
+        - if also found in linked list: do nothing; else add to linked list 
+        - do not open and close the file 
+        */
+        foundCase3 = fileExists(filename);
+        
+        /* search the disk linked list */
+        cur = diskHead;
         while (cur != NULL) {
             if (strcmp(cur->filename, filename) == 0) {
                 foundCase2 = 1;
@@ -74,14 +99,24 @@ int openDisk(char *filename, int nBytes) {
         }
 
         /* nBytes is 0 and no disk exists with the given filename; return error */
-        if (!foundCase2) {
+        if (!foundCase2 && !foundCase3) {
             /* TODO errno */
             return -1; 
         }
     }
 
-    /* if the disk does not already exist, make a new one */
-    if (!foundCase1 && !foundCase2) {
+    /* attempt open the file */
+    FILE *file;
+    if (!foundCase3) {
+        file = fopen(filename, "wb");
+        if (!file) {
+            perror("Error opening file");
+            return -1;
+        }
+    }
+
+    /* in these cases, add a disk element to the linked list */
+    if ((!foundCase1 && !foundCase2) || (foundCase3 && !foundCase2)) {
 
         DiskLL* new = (DiskLL*) malloc(sizeof(DiskLL));
         if (new == NULL) {
@@ -117,7 +152,9 @@ int openDisk(char *filename, int nBytes) {
     int out = cur->id;
 
     /* attempt to close the file */
-    fclose(file);
+    if (!foundCase3) {
+        fclose(file);
+    }
 
     /*
     printf("openDisk() Success!\n\t diskNum: %d \n\t filename: %s \n\t nBytes: %d \n\t foundCase1: %d \n\t foundCase2: %d \n"
