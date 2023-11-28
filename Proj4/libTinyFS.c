@@ -26,10 +26,11 @@
 
 #define VALID_BYTE 0x44
 char* curDisk = NULL;
+int curDiskNum = -1;
 
 int tfs_mkfs(char *filename, int nBytes) {
     
-    int disk = openDisk(filename, nBytes);
+    curDiskNum = openDisk(filename, nBytes);
 
     /* note: div is automatically floored */
     int nBlocks = nBytes / BLOCKSIZE;
@@ -47,7 +48,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     buffer[4] = nBlocks; /* additional meta data */
     buffer[5] = 2; /* "pointer" to init free block linked list */
     
-    int retValue = writeBlock(disk, 0, buffer);
+    int retValue = writeBlock(curDiskNum, 0, buffer);
     if (retValue < 0) {
         return -1;
     }
@@ -56,7 +57,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     memset(buffer, 0, BLOCKSIZE);
     buffer[0] = 2;
     buffer[1] = VALID_BYTE;
-    retValue = writeBlock(disk, 1, buffer);
+    retValue = writeBlock(curDiskNum, 1, buffer);
     if (retValue < 0) {
         return -1;
     }
@@ -67,7 +68,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     for (i = 2; i < nBlocks - 1; i++) {
         buffer[2] = i + 1;
 
-        retValue = writeBlock(disk, i, buffer);
+        retValue = writeBlock(curDiskNum, i, buffer);
         if (retValue < 0) {
             return -1;
         }
@@ -75,7 +76,7 @@ int tfs_mkfs(char *filename, int nBytes) {
 
     /* setup final block; pointer is null */
     buffer[2] = 0;
-    retValue = writeBlock(disk, nBlocks - 1, buffer);
+    retValue = writeBlock(curDiskNum, nBlocks - 1, buffer);
     if (retValue < 0) {
         return -1;
     }
@@ -87,15 +88,8 @@ int tfs_mkfs(char *filename, int nBytes) {
 }
 
 int tfs_mount(char *diskname) {
-
     /* attempt to unmount any currently mounted system */
     int unmounted = tfs_unmount();
-
-    int fd;
-    fd = open(diskname, O_RDONLY);
-    if (fd == -1) {
-        return -1;
-    }
 
     /* read the superblock */
     char *buffer;
@@ -103,8 +97,7 @@ int tfs_mount(char *diskname) {
     if (buffer == NULL) {
         return -1;
     }
-    if (pread(fd, buffer, BLOCKSIZE, 0) != BLOCKSIZE) {
-        close(fd);
+    if (readBlock(curDiskNum, 0, buffer) < 0) {
         return -1;
     }
 
@@ -115,19 +108,15 @@ int tfs_mount(char *diskname) {
     int i;
     int offset; 
     for (i = 0; i < nBlocks; i++) {
-        offset = i * BLOCKSIZE;
-        if (pread(fd, buffer, BLOCKSIZE, offset) != BLOCKSIZE) {
-            close(fd);
+        if (readBlock(curDiskNum, i, buffer) < 0) {
             return -1;
         }
 
         if ((unsigned char) buffer[1] != VALID_BYTE) {
-            close(fd);
             return -1;
         }
     }
 
-    close(fd);
     free(buffer);
     buffer = NULL; 
 
@@ -151,8 +140,7 @@ int tfs_unmount(void) {
 }
 
 fileDescriptor tfs_openFile(char *name) {
-    /* search root dir for existing file */
-  
+   
 }
 
 
@@ -170,6 +158,8 @@ int main(int argc, char** argv) {
 
     // int res2 = tfs_unmount()
     // one step at a time debug mkfs firt 
+
+    // int gg = tfs_openFile("gg.txt");
 
 
     return 0;
