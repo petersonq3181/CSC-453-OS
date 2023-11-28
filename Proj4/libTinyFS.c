@@ -43,11 +43,20 @@ int tfs_mkfs(char *filename, int nBytes) {
     memset(buffer, 0, BLOCKSIZE);
     buffer[0] = 1;
     buffer[1] = VALID_BYTE;
-    buffer[2] = 1;
-    /* for myself, store nBlocks in superblock */
-    buffer[4] = nBlocks;
-
+    buffer[2] = 1; /* "pointer" to root dir inode block */
+    buffer[4] = nBlocks; /* additional meta data */
+    buffer[5] = 2; /* "pointer" to init free block linked list */
+    
     int retValue = writeBlock(disk, 0, buffer);
+    if (retValue < 0) {
+        return -1;
+    }
+
+    /* setup root dir inode block */
+    memset(buffer, 0, BLOCKSIZE);
+    buffer[0] = 2;
+    buffer[1] = VALID_BYTE;
+    retValue = writeBlock(disk, 1, buffer);
     if (retValue < 0) {
         return -1;
     }
@@ -55,7 +64,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     /* setup all middle blocks (init as free blocks) */
     buffer[0] = 4;
     int i;
-    for (i = 1; i < nBlocks - 1; i++) {
+    for (i = 2; i < nBlocks - 1; i++) {
         buffer[2] = i + 1;
 
         retValue = writeBlock(disk, i, buffer);
@@ -141,6 +150,13 @@ int tfs_unmount(void) {
     return 0; 
 }
 
+fileDescriptor tfs_openFile(char *name) {
+    /* search root dir for existing file */
+  
+}
+
+
+
 /* TODO temp for testing */
 int main(int argc, char** argv) {
 
@@ -151,6 +167,10 @@ int main(int argc, char** argv) {
     int res = tfs_mount("a.txt");
     printf("res: %d\n", res);
     printf("curDisk = %s\n", curDisk);
+
+    // int res2 = tfs_unmount()
+    // one step at a time debug mkfs firt 
+
 
     return 0;
 }
