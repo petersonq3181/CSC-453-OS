@@ -22,7 +22,7 @@
 */
 
 /* TODO temp for testing */
-#define NUM_BLOCKS 4
+#define NUM_BLOCKS 12
 
 #define VALID_BYTE 0x44
 char* curDisk = NULL;
@@ -32,13 +32,9 @@ int curDiskNum = -1;
 int compareFilename(char *buffer, char *name) {
     /* hardcoded for my implementation of filename in file's inode block */
     char *filename = &buffer[7];
-
     if (strcmp(filename, name) == 0) {
-        printf("The strings are equal\n");
         return 1;
     }
-
-    printf("The strings are not equal\n");
     return 0;
 }
 
@@ -281,6 +277,10 @@ fileDescriptor tfs_openFile(char *name) {
             openListIdx++; 
         }
         superblock[openListIdx] = freeBlockIdx;
+        retValue = writeBlock(curDiskNum, 0, superblock);
+        if (retValue < 0) {
+            return -1;
+        }
 
         /* add new open file to directory list */
         int dirListIdx = 4;
@@ -288,6 +288,10 @@ fileDescriptor tfs_openFile(char *name) {
             dirListIdx++; 
         }
         rootdir[dirListIdx] = freeBlockIdx;
+        retValue = writeBlock(curDiskNum, 1, rootdir);
+        if (retValue < 0) {
+            return -1;
+        }
 
         fd = freeBlockIdx;
     }
@@ -318,6 +322,12 @@ int main(int argc, char** argv) {
     int fd = tfs_openFile("TFS_f1");
 
     printf("got here fd: %d\n", fd);
+
+    fd = tfs_openFile("TFS_f2");
+    fd = tfs_openFile("TFS_f3");
+
+    // fd = tfs_openFile("TFS_f2");
+
 
 
     return 0;
