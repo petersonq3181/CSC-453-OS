@@ -351,6 +351,118 @@ int tfs_closeFile(fileDescriptor FD) {
     return 0;
 }
 
+int tfs_deleteFile(fileDescriptor FD) {
+    /* attempt to first close the file if necessary */
+    int closeRes = tfs_closeFile(FD); 
+
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return -1;
+    }
+
+    /* read the root dir inode */
+    char *rootdir;
+    rootdir = malloc(BLOCKSIZE * sizeof(char));
+    if (rootdir == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 1, rootdir) < 0) {
+        return -1;
+    }
+
+    /* traverse directory for if file already exists */
+    int fileExists = 0;
+    int fileInodeIdx = -1;
+    int inodeListIdx = 4;
+    while (rootdir[inodeListIdx] != 0) {
+        if (rootdir[inodeListIdx] == FD) {
+            fileExists = 1;
+            fileInodeIdx = rootdir[inodeListIdx];
+            break; 
+        }
+        inodeListIdx++; 
+    }
+    if (!fileExists) {
+        printf("error\n");
+        return -1;
+    }
+
+    /* traverse to end of free-block LL */
+    char *freeBlock;
+    freeBlock = malloc(BLOCKSIZE * sizeof(char));
+    if (freeBlock == NULL) {
+        return -1;
+    }
+    int freeBlockIdx = superblock[5];
+    int prevBlockIdx = superblock[5];
+    if (freeBlockIdx == 0) {
+        printf("error\n");
+        return - 1;
+    }
+    while (freeBlockIdx != 0) { 
+        memset(freeBlock, 0, BLOCKSIZE);
+        if (readBlock(curDiskNum, freeBlockIdx, freeBlock) < 0) {
+            return -1;
+        }
+
+        prevBlockIdx = freeBlockIdx;
+        freeBlockIdx = freeBlock[2];
+    }
+
+    /* ----- traverse file inode / extent blocks, and turn into free blocks 
+        and append to free LL 
+    */
+    char *fileBlock;
+    fileBlock = malloc(BLOCKSIZE * sizeof(char));
+    if (fileBlock == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, fileInodeIdx, fileBlock) < 0) {
+        return -1;
+    }
+    int curFreeBlockIdx = prevBlockIdx; 
+    int curFileBlockIdx = fileInodeIdx;
+    int nextFileBlockIdx = fileBlock[2]; 
+    while (nextFileBlockIdx != 0) {
+        nextFileBlockIdx = fileBlock[2]; 
+
+        freeBlock[2] = curFileBlockIdx;
+        if (writeBlock(curDiskNum, curFreeBlockIdx, freeBlock) < 0) {
+            printf("error\n");
+            return -1;
+        }
+
+        /* edit file block to be a free block */
+        memset(fileBlock, 0, BLOCKSIZE);
+        fileBlock[0] = 4;
+        fileBlock[1] = 0x44;
+        if (writeBlock(curDiskNum, curFileBlockIdx, fileBlock) < 0) {
+            printf("error\n");
+            return -1;
+        }
+
+        memcpy(freeBlock, fileBlock, BLOCKSIZE);
+        if (readBlock(curDiskNum, nextFileBlockIdx, fileBlock) < 0) {
+            printf("error\n");
+            return -1;
+        }
+    }
+
+    free(rootdir);
+    rootdir = NULL; 
+    free(freeBlock);
+    freeBlock = NULL; 
+    free(fileBlock);
+    fileBlock = NULL; 
+
+
+}
+
 /* TODO temp for testing */
 int main(int argc, char** argv) {
 
