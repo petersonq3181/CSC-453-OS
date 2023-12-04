@@ -28,6 +28,20 @@
 char* curDisk = NULL;
 int curDiskNum = -1;
 
+/* helper */
+int compareFilename(char *buffer, char *name) {
+    /* hardcoded for my implementation of filename in file's inode block */
+    char *filename = &buffer[7];
+
+    if (strcmp(filename, name) == 0) {
+        printf("The strings are equal\n");
+        return 1;
+    }
+
+    printf("The strings are not equal\n");
+    return 0;
+}
+
 int tfs_mkfs(char *filename, int nBytes) {
     
     curDiskNum = openDisk(filename, nBytes);
@@ -140,7 +154,134 @@ int tfs_unmount(void) {
 }
 
 fileDescriptor tfs_openFile(char *name) {
-   
+    if (strlen(name) > 8) {
+        printf("error\n");
+        return -1; 
+    }
+    
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return -1;
+    }
+
+    /* read the root dir inode */
+    char *rootdir;
+    rootdir = malloc(BLOCKSIZE * sizeof(char));
+    if (rootdir == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 1, rootdir) < 0) {
+        return -1;
+    }
+
+    /* make sure dir is not full, and open file list is not full */
+    if (rootdir[BLOCKSIZE - 1] != 0 || superblock[BLOCKSIZE - 1] != 0) {
+        printf("error\n");
+        return -1;
+    }
+
+    /* traverse directory for if file already exists */
+    char *buffer;
+    buffer = malloc(BLOCKSIZE * sizeof(char));
+    if (buffer == NULL) {
+        return -1;
+    }
+    int fileExists = 0;
+    int fileInodeIdx = -1;
+    int inodeListIdx = 4;
+    while (rootdir[inodeListIdx] != 0) {
+        memset(buffer, 0, BLOCKSIZE);
+        if (readBlock(curDiskNum, rootdir[inodeListIdx], buffer) < 0) {
+            return -1;
+        }
+
+        if (compareFilename(buffer, name)) {
+            fileExists = 1;
+            fileInodeIdx = rootdir[inodeListIdx];
+            break; 
+        }
+
+        inodeListIdx++; 
+    }
+
+    
+    if (fileExists) {
+        /* check if the file is already open */
+        int openListIdx = 6;
+        while (superblock[openListIdx] != 0) {
+            if (superblock[openListIdx] == fileInodeIdx) {
+                return fileInodeIdx;
+            }
+            openListIdx++; 
+        }
+
+        /* if not already open, add to open list */
+        superblock[openListIdx] = fileInodeIdx;
+
+        return fileInodeIdx;
+    } else {
+        /* ----- find free block */
+        prevFreeBlockIdx = 0;
+        freeBlockIdx = superblock[4];
+        if (freeBlockIdx <= 0) {
+            printf("error\n");
+            return -1;
+        }
+
+        /* should leave freeBlockIdx at the last free block in the LL */
+        while (freeBlockIdx != 0) {
+            memset(buffer, 0, BLOCKSIZE);
+            if (readBlock(curDiskNum, freeBlockIdx, buffer) < 0) {
+                return -1;
+            }
+
+            prevFreeBlockIdx = freeBlockIdx;
+            freeBlockIdx = buffer[2];
+        }
+        
+        /* accordingly edit the free LL */
+        memset(buffer, 0, BLOCKSIZE);
+        buffer[0] = 4;
+        buffer[1] = VALID_BYTE;
+        buffer[2] = 0;
+        retValue = writeBlock(curDiskNum, prevFreeBlockIdx, buffer);
+        if (retValue < 0) {
+            return -1;
+        }
+
+        /* ------ turn free block into new file's inode */
+        memset(buffer, 0, BLOCKSIZE);
+        buffer[0] = 2;
+        buffer[1] = VALID_BYTE;
+        buffer[2] = 0;
+        strcpy(&buffer[7], name);
+        retValue = writeBlock(curDiskNum, freeBlockIdx, buffer);
+        if (retValue < 0) {
+            return -1;
+        }
+
+        /* ----- edit meta-data lists */
+        /* add new open file to open list */
+        int openListIdx = 6;
+        while (superblock[openListIdx] != 0) {
+            openListIdx++; 
+        }
+        superblock[openListIdx] = freeBlockIdx;
+
+        /* add new open file to directory list */
+        int dirListIdx = 4;
+        while (rootdir[dirListIdx] != 0) {
+            dirListIdx++; 
+        }
+        rootdir[dirListIdx] = freeBlockIdx;
+
+        return freeBlockIdx;
+    }
 }
 
 
