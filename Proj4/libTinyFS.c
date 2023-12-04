@@ -306,7 +306,50 @@ fileDescriptor tfs_openFile(char *name) {
     return fd; 
 }
 
+int tfs_closeFile(fileDescriptor FD) {
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return -1;
+    }
 
+    /* check if the file is already open */
+    int openListIdx = 6;
+    int foundOpen = 0;
+    while (superblock[openListIdx] != 0) {
+        if (superblock[openListIdx] == FD) {
+            foundOpen = 1;
+            break; 
+        }
+        openListIdx++; 
+    }
+
+    if (!foundOpen) {
+        printf("error\n");
+        return -1;
+    }
+
+    /* update open file list */
+    while (superblock[openListIdx] != 0) {
+        superblock[openListIdx] = superblock[openListIdx + 1];
+        openListIdx++; 
+    }
+
+    /* write the updated superblock back to disk */
+    if (writeBlock(curDiskNum, 0, superblock) < 0) {
+        printf("error\n");
+        return -1;
+    }
+
+    free(superblock);
+    superblock = NULL; 
+
+    return 0;
+}
 
 /* TODO temp for testing */
 int main(int argc, char** argv) {
@@ -324,10 +367,9 @@ int main(int argc, char** argv) {
     printf("got here fd: %d\n", fd);
 
     fd = tfs_openFile("TFS_f2");
-    fd = tfs_openFile("TFS_f3");
 
     // fd = tfs_openFile("TFS_f2");
-
+    fd = tfs_openFile("TFS_f2");
 
 
     return 0;
