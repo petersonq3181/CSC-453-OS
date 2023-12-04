@@ -22,7 +22,7 @@
 */
 
 /* TODO temp for testing */
-#define NUM_BLOCKS 12
+#define NUM_BLOCKS 4
 
 #define VALID_BYTE 0x44
 char* curDisk = NULL;
@@ -209,7 +209,8 @@ fileDescriptor tfs_openFile(char *name) {
         inodeListIdx++; 
     }
 
-    
+    int fd; 
+
     if (fileExists) {
         /* check if the file is already open */
         int openListIdx = 6;
@@ -223,25 +224,33 @@ fileDescriptor tfs_openFile(char *name) {
         /* if not already open, add to open list */
         superblock[openListIdx] = fileInodeIdx;
 
-        return fileInodeIdx;
+        fd = fileInodeIdx;
     } else {
         /* ----- find free block */
-        prevFreeBlockIdx = 0;
-        freeBlockIdx = superblock[4];
-        if (freeBlockIdx <= 0) {
-            printf("error\n");
-            return -1;
-        }
+        int prevFreeBlockIdx; 
+        int freeBlockIdx = superblock[5];
+        int penultimate = 0;
+        int last = 0;
 
-        /* should leave freeBlockIdx at the last free block in the LL */
-        while (freeBlockIdx != 0) {
+        while (freeBlockIdx != 0) { 
             memset(buffer, 0, BLOCKSIZE);
             if (readBlock(curDiskNum, freeBlockIdx, buffer) < 0) {
                 return -1;
             }
 
-            prevFreeBlockIdx = freeBlockIdx;
+            if (buffer[2] == 0) { 
+                last = freeBlockIdx;
+                break;
+            }
+
+            penultimate = freeBlockIdx;
             freeBlockIdx = buffer[2];
+        }
+
+        if (penultimate == 0) {
+            prevFreeBlockIdx = last;
+        } else {
+            prevFreeBlockIdx = penultimate;
         }
         
         /* accordingly edit the free LL */
@@ -249,7 +258,7 @@ fileDescriptor tfs_openFile(char *name) {
         buffer[0] = 4;
         buffer[1] = VALID_BYTE;
         buffer[2] = 0;
-        retValue = writeBlock(curDiskNum, prevFreeBlockIdx, buffer);
+        int retValue = writeBlock(curDiskNum, prevFreeBlockIdx, buffer);
         if (retValue < 0) {
             return -1;
         }
@@ -280,8 +289,17 @@ fileDescriptor tfs_openFile(char *name) {
         }
         rootdir[dirListIdx] = freeBlockIdx;
 
-        return freeBlockIdx;
+        fd = freeBlockIdx;
     }
+
+    free(superblock);
+    free(rootdir);
+    free(buffer);
+    superblock = NULL;
+    rootdir = NULL;
+    buffer = NULL;
+
+    return fd; 
 }
 
 
@@ -297,10 +315,9 @@ int main(int argc, char** argv) {
     printf("res: %d\n", res);
     printf("curDisk = %s\n", curDisk);
 
-    // int res2 = tfs_unmount()
-    // one step at a time debug mkfs firt 
+    int fd = tfs_openFile("TFS_f1");
 
-    // int gg = tfs_openFile("gg.txt");
+    printf("got here fd: %d\n", fd);
 
 
     return 0;
