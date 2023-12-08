@@ -460,7 +460,7 @@ int tfs_deleteFile(fileDescriptor FD) {
     free(fileBlock);
     fileBlock = NULL; 
 
-
+    return 0; 
 }
 
 /* TODO temp for testing */
@@ -478,10 +478,13 @@ int main(int argc, char** argv) {
 
     printf("got here fd: %d\n", fd);
 
-    fd = tfs_openFile("TFS_f2");
+    int fd2 = tfs_openFile("TFS_f2");
 
-    // fd = tfs_openFile("TFS_f2");
-    fd = tfs_openFile("TFS_f2");
+    fd2 = tfs_openFile("TFS_f2");
+    int fd3  = tfs_openFile("TFS_f3");
+
+    fd = tfs_closeFile(fd3);
+    fd = tfs_closeFile(fd2);
 
 
     return 0;
