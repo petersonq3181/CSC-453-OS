@@ -752,6 +752,7 @@ int main(int argc, char** argv) {
     }
     int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
 
+    dres = tfs_deleteFile(fd2);
 
     printf("got to end of main!\n");
 
