@@ -22,7 +22,7 @@
 */
 
 /* TODO temp for testing */
-#define NUM_BLOCKS 12
+#define NUM_BLOCKS 7
 
 #define VALID_BYTE 0x44
 char* curDisk = NULL;
@@ -414,51 +414,72 @@ int tfs_deleteFile(fileDescriptor FD) {
         freeBlockIdx = freeBlock[2];
     }
 
-    /* ----- traverse file inode / extent blocks, and turn into free blocks 
+    /* ----- traverse file extent blocks, and turn into free blocks 
         and append to free LL 
     */
-    char *fileBlock;
-    fileBlock = malloc(BLOCKSIZE * sizeof(char));
-    if (fileBlock == NULL) {
+    char *curFile;
+    curFile = malloc(BLOCKSIZE * sizeof(char));
+    if (curFile == NULL) {
         return -1;
     }
-    if (readBlock(curDiskNum, fileInodeIdx, fileBlock) < 0) {
+    if (readBlock(curDiskNum, fileInodeIdx, curFile) < 0) {
         return -1;
     }
-    int curFreeBlockIdx = prevBlockIdx; 
-    int curFileBlockIdx = fileInodeIdx;
-    int nextFileBlockIdx = fileBlock[2]; 
-    while (nextFileBlockIdx != 0) {
-        nextFileBlockIdx = fileBlock[2]; 
 
-        freeBlock[2] = curFileBlockIdx;
-        if (writeBlock(curDiskNum, curFreeBlockIdx, freeBlock) < 0) {
-            printf("error\n");
-            return -1;
-        }
-
-        /* edit file block to be a free block */
-        memset(fileBlock, 0, BLOCKSIZE);
-        fileBlock[0] = 4;
-        fileBlock[1] = 0x44;
-        if (writeBlock(curDiskNum, curFileBlockIdx, fileBlock) < 0) {
-            printf("error\n");
-            return -1;
-        }
-
-        memcpy(freeBlock, fileBlock, BLOCKSIZE);
-        if (readBlock(curDiskNum, nextFileBlockIdx, fileBlock) < 0) {
-            printf("error\n");
-            return -1;
-        }
+    char *curFree;
+    curFree = malloc(BLOCKSIZE * sizeof(char));
+    if (curFree == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, prevBlockIdx, curFree) < 0) {
+        return -1;
     }
 
+    int curFreeIdx = prevBlockIdx;
+    int curFileIdx = fileInodeIdx;
+    int nextFileIdx;
+    while (1) {
+        nextFileIdx = curFile[2];
+
+        /* edit and rewrite free block */
+        curFree[2] = curFileIdx; 
+        if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
+            printf("error\n");
+            return -1;
+        }
+
+        /* rewrite file block to be a free block */
+        memset(curFile, 0, BLOCKSIZE);
+        curFile[0] = 4;
+        curFile[1] = 0x44;
+        if (writeBlock(curDiskNum, curFileIdx, curFile) < 0) {
+            printf("error\n");
+            return -1;
+        }
+
+        if (nextFileIdx == 0) {
+            break; 
+        }
+
+        memcpy(curFree, curFile, BLOCKSIZE);
+        curFreeIdx = curFileIdx;
+        
+        if (readBlock(curDiskNum, nextFileIdx, curFile) < 0) {
+            return -1;
+        }
+        curFileIdx = nextFileIdx;
+    }
+   
+    free(superblock);
+    superblock = NULL;
     free(rootdir);
-    rootdir = NULL; 
+    rootdir = NULL;
     free(freeBlock);
-    freeBlock = NULL; 
-    free(fileBlock);
-    fileBlock = NULL; 
+    freeBlock = NULL;
+    free(curFile);
+    curFile = NULL;
+    free(curFree);
+    curFree = NULL;
 
     return 0; 
 }
@@ -483,9 +504,10 @@ int main(int argc, char** argv) {
     fd2 = tfs_openFile("TFS_f2");
     int fd3  = tfs_openFile("TFS_f3");
 
-    fd = tfs_closeFile(fd3);
-    fd = tfs_closeFile(fd2);
 
+    int dres = tfs_deleteFile(fd2);
+
+    printf("got to end of main!\n");
 
     return 0;
 }
