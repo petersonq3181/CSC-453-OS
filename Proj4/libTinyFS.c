@@ -38,6 +38,19 @@ int compareFilename(char *buffer, char *name) {
     }
     return 0;
 }
+void printBuffer(char *buffer) {
+    int i;
+    for (i = 0; i < BLOCKSIZE; i++) {
+        printf("%02x ", (unsigned char)buffer[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n"); 
+        }
+    }
+    if (BLOCKSIZE % 16 != 0) {
+        printf("\n\n"); 
+    }
+    fflush(stdout);
+}
 
 int tfs_mkfs(char *filename, int nBytes) {
     
@@ -353,6 +366,16 @@ int tfs_closeFile(fileDescriptor FD) {
 }
 
 int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
+    /* for testing */
+    char *blockTwo;
+    blockTwo = malloc(BLOCKSIZE * sizeof(char));
+    if (blockTwo == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 2, blockTwo) < 0) {
+        return -1;
+    }
+
     /* read the superblock */
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
@@ -413,6 +436,10 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
         return -1;
     }
 
+    if (readBlock(curDiskNum, 2, blockTwo) < 0) {
+        return -1;
+    }
+
     /* traverse to end of free-block LL */
     freeBlock = malloc(BLOCKSIZE * sizeof(char));
     if (freeBlock == NULL) {
@@ -440,7 +467,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
         printf("error\n");
         return -1;
     }
-    
+
     /* clear any current file extents, and free them, (b/c overwrite) */
     if (inode[2] != 0) {
 
@@ -535,12 +562,20 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
                 return -1;
             }
         }
-        
+
         /* update superblock to point to new beginning of free LL */
         superblock[5] = curFree[2];
         if (writeBlock(curDiskNum, 0, superblock) < 0) {
             return -1;
         }
+
+        
+
+        /* ### */
+        if (readBlock(curDiskNum, 2, blockTwo) < 0) {
+            return -1;
+        }
+        printBuffer(blockTwo);
 
         /* write last file extent (no further pointers) */
         memset(curFree, 0, BLOCKSIZE);
@@ -555,6 +590,14 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
 
     /* finally rewrite inode block */
     inode[6] = size;
+
+
+    if (readBlock(curDiskNum, 2, blockTwo) < 0) {
+        return -1;
+    }
+    printBuffer(blockTwo);
+    /* ### */
+
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return -1;
     }
@@ -842,36 +885,46 @@ int main(int argc, char** argv) {
 
     /* ---- write tests */
     int sizeToWrite = 10;
-    char toWrite[sizeToWrite]; 
-    int i;
-    for (i = 0; i < sizeToWrite; i++) {
-        toWrite[i] = 'a' + i;
-    }
-    toWrite
-    int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
-
-    sizeToWrite = 300;
-    char *toWritet = (char*) malloc(sizeToWrite * sizeof(char));
-    if (toWritet == NULL) {
+    char *toWrite = (char*) malloc(sizeToWrite * sizeof(char));
+    if (toWrite == NULL) {
         printf("error allocaitng\n");
         return -1;
     }
-    srand((unsigned int)time(NULL)); 
+    int i; 
     for (i = 0; i < sizeToWrite; i++) {
-        toWritet[i] = (char)(rand() % 256);
+        toWrite[i] = 'A' + i; 
     }
-    wres = tfs_writeFile(fd, toWritet, sizeToWrite);
+
+    for (i = 0; i < sizeToWrite; i++) {
+        printf("%c ", toWrite[i]);
+    }
+    printf("\n");
+
+    int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
+
+    // sizeToWrite = 300;
+    // char *toWritet = (char*) malloc(sizeToWrite * sizeof(char));
+    // if (toWritet == NULL) {
+    //     printf("error allocaitng\n");
+    //     return -1;
+    // }
+    // srand((unsigned int)time(NULL)); 
+    // for (i = 0; i < sizeToWrite; i++) {
+    //     toWritet[i] = (char)(rand() % 256);
+    // }
+    // wres = tfs_writeFile(fd, toWritet, sizeToWrite);
 
     int dres = tfs_deleteFile(fd);
+    // dres = tfs_deleteFile(fd2);
 
-    /* ---- readByte tests */
-    char *rb = (char*)malloc(1 * sizeof(char));
-    if (rb == NULL) {
-        printf("error allocating\n");
-        return -1;
-    }
-    int rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %s\n", rb);
+    // /* ---- readByte tests */
+    // char *rb = (char*)malloc(1 * sizeof(char));
+    // if (rb == NULL) {
+    //     printf("error allocating\n");
+    //     return -1;
+    // }
+    // int rbres = tfs_readByte(fd2, rb);
+    // printf("Read byte: %s\n", rb);
 
     printf("got to end of main!\n");
 
