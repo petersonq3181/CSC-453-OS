@@ -366,16 +366,6 @@ int tfs_closeFile(fileDescriptor FD) {
 }
 
 int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
-    /* for testing */
-    char *blockTwo;
-    blockTwo = malloc(BLOCKSIZE * sizeof(char));
-    if (blockTwo == NULL) {
-        return -1;
-    }
-    if (readBlock(curDiskNum, 2, blockTwo) < 0) {
-        return -1;
-    }
-
     /* read the superblock */
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
@@ -433,10 +423,6 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     char *curFree;
     curFree = malloc(BLOCKSIZE * sizeof(char));
     if (curFree == NULL) {
-        return -1;
-    }
-
-    if (readBlock(curDiskNum, 2, blockTwo) < 0) {
         return -1;
     }
 
@@ -551,67 +537,35 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             curFree[0] = 3;
             curFree[1] = 0x44;
 
-            if (i == n - 1) {
-                curFree[2] = 0;
-            } else {
-                curFree[2] = nextFreeIdx;
-            }
-
-
-            /* ### */
-            printBuffer(curFree);
-
             bufferOffset = buffer + (i * 252);
             if (i == n - 1) {
+                curFree[2] = 0;
                 int rem = size % 252;
                 memcpy(curFree + 3, bufferOffset, rem); 
             } else {
+                curFree[2] = nextFreeIdx;
                 memcpy(curFree + 3, bufferOffset, 252);
             }
-
-            printBuffer(curFree);
-            /* ### */
 
             if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
                 return -1;
             }
-
-            printf("HERE: %d\n", curFreeIdx);
 
             curFreeIdx = nextFreeIdx;
             if (readBlock(curDiskNum, nextFreeIdx, curFree) < 0) {
                 return -1;
             }
         }
-        printf("n: %d\n", n);
 
         /* update superblock to point to new beginning of free LL */
         superblock[5] = curFree[2];
         if (writeBlock(curDiskNum, 0, superblock) < 0) {
             return -1;
         }
-
-        
-        // /* write last file extent (no further pointers) */
-        // memset(curFree, 0, BLOCKSIZE);
-        // curFree[0] = 3;
-        // curFree[1] = 0x44;
-        // bufferOffset = buffer + ((n - 1) * 252);
-        // memcpy(curFree + 3, bufferOffset, 252);
-        // if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
-        //     return -1;
-        // }
     }
 
     /* finally rewrite inode block */
     inode[6] = size;
-
-
-    if (readBlock(curDiskNum, 2, blockTwo) < 0) {
-        return -1;
-    }
-    printBuffer(blockTwo);
-    /* ### */
 
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return -1;
