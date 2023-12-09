@@ -391,6 +391,18 @@ int tfs_deleteFile(fileDescriptor FD) {
         printf("error\n");
         return -1;
     }
+    /* delete file pointer from root dir list */
+    while (rootdir[inodeListIdx] != 0) {
+        rootdir[inodeListIdx] = rootdir[inodeListIdx + 1];
+        inodeListIdx++;
+    }
+    if (inodeListIdx > 0 && rootdir[inodeListIdx - 1] != 0) {
+        rootdir[inodeListIdx - 1] = 0;
+    }
+    if (writeBlock(curDiskNum, 1, rootdir) < 0) {
+        printf("error\n");
+        return -1;
+    }
 
     /* traverse to end of free-block LL */
     char *freeBlock;
@@ -506,6 +518,7 @@ int main(int argc, char** argv) {
 
 
     int dres = tfs_deleteFile(fd2);
+    dres = tfs_deleteFile(fd);
 
     printf("got to end of main!\n");
 
