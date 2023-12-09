@@ -824,6 +824,76 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
 
     buffer[0] = block[3 + fpBo];
 
+    free(superblock);
+    superblock = NULL;
+    free(rootdir);
+    rootdir = NULL;
+    free(inode);
+    inode = NULL;
+    free(block);
+    block = NULL;
+
+    return 0;
+}
+
+int tfs_seek(fileDescriptor FD, int offset) {
+    /* change the file pointer location to 
+    offset (absolute). Returns success/error codes.
+    */
+
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return -1;
+    }
+
+    /* check if the file is already open */
+    int openListIdx = 6;
+    int fileIdx = 0;
+    int foundOpen = 0;
+    while (superblock[openListIdx] != 0) {
+        if (superblock[openListIdx] == FD) {
+            foundOpen = 1;
+            fileIdx = superblock[openListIdx];
+            break; 
+        }
+        openListIdx++; 
+    }
+    if (!foundOpen) {
+        printf("error\n");
+        return -1;
+    }
+
+    /* read the file inode */
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, fileIdx, inode) < 0) {
+        return -1;
+    }
+
+    if (offset > inode[6]) {
+        printf("offset greater than file size\n");
+        return -1; 
+    }
+
+    /* modify and write back */
+    int fpBi = offset / 252; 
+    int fpBo = offset % 252; 
+
+    inode[4] = fpBi;
+    inode[5] = fpBo; 
+
+    if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
+        return -1;
+    }    
+
     return 0;
 }
 
@@ -849,8 +919,6 @@ int main(int argc, char** argv) {
     int fd2 = tfs_openFile("TFS_f2");
 
     fd2 = tfs_openFile("TFS_f2");
-
-    // int dres = tfs_deleteFile(fd);
 
     /* ---- write tests */
     int sizeToWrite = 10;
@@ -883,17 +951,14 @@ int main(int argc, char** argv) {
     // }
     // wres = tfs_writeFile(fd, toWritet, sizeToWrite);
 
-    int dres = tfs_deleteFile(fd);
-    // dres = tfs_deleteFile(fd2);
-
-    // /* ---- readByte tests */
-    // char *rb = (char*)malloc(1 * sizeof(char));
-    // if (rb == NULL) {
-    //     printf("error allocating\n");
-    //     return -1;
-    // }
-    // int rbres = tfs_readByte(fd2, rb);
-    // printf("Read byte: %s\n", rb);
+    /* ---- readByte tests */
+    char *rb = (char*)malloc(1 * sizeof(char));
+    if (rb == NULL) {
+        printf("error allocating\n");
+        return -1;
+    }
+    int rbres = tfs_readByte(fd2, rb);
+    printf("Read byte: %s\n", rb);
 
     printf("got to end of main!\n");
 
