@@ -822,7 +822,25 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
         return -1;
     }
 
-    buffer[0] = block[3 + fpBo];
+    /* increment file pointer */
+    if (inode[5] == 252) {
+        inode[4] += 1;
+        inode[5] = 0;
+    } else {
+        inode[5] += 1;
+    }
+    if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
+        printf("error\n");
+        return -1;
+    }
+
+
+    printf("char from read: %c\n", block[3 + fpBo]);
+
+    // buffer[0] = block[3 + fpBo];
+    // memcpy(buffer, block[3 + fpBo], 1);
+    // strcpy(buffer, block[3 + fpBo])
+    buffer = &block[3 + fpBo];
 
     free(superblock);
     superblock = NULL;
@@ -894,6 +912,11 @@ int tfs_seek(fileDescriptor FD, int offset) {
         return -1;
     }    
 
+    free(superblock);
+    superblock = NULL; 
+    free(inode);
+    inode = NULL; 
+
     return 0;
 }
 
@@ -951,14 +974,20 @@ int main(int argc, char** argv) {
     // }
     // wres = tfs_writeFile(fd, toWritet, sizeToWrite);
 
-    /* ---- readByte tests */
+    /* ---- readByte and seek tests */
     char *rb = (char*)malloc(1 * sizeof(char));
     if (rb == NULL) {
         printf("error allocating\n");
         return -1;
     }
     int rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %s\n", rb);
+    printf("Read byte: %c\n", rb);
+
+    // int sres = tfs_seek(fd2, 3);
+    // rbres = tfs_readByte(fd2, rb);
+    // printf("Read byte: %c\n", rb);
+
+
 
     printf("got to end of main!\n");
 
