@@ -1045,7 +1045,7 @@ int tfs_seek(fileDescriptor FD, int offset)
     }
 
     /* modify and write back */
-    int fpBi = offset / 252;
+    int fpBi = (offset / 252) + 1;
     int fpBo = offset % 252;
 
     inode[4] = fpBi;
@@ -1135,6 +1135,10 @@ int main(int argc, char **argv)
     rbres = tfs_readByte(fd2, rb);
     printf("Read byte: %c\n", rb[0]);
 
+    rbres = tfs_readByte(fd2, rb);
+    printf("Read byte: %c\n", rb[0]);
+
+    int seekres = tfs_seek(fd2, 8);
     rbres = tfs_readByte(fd2, rb);
     printf("Read byte: %c\n", rb[0]);
 
