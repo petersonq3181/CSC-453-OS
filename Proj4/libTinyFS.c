@@ -557,22 +557,20 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
                 curFree[2] = nextFreeIdx;
             }
 
-            printBuffer(curFree);
-            if (readBlock(curDiskNum, 2, blockTwo) < 0) {
-                return -1;
-            }
-            printBuffer(blockTwo);
+
             /* ### */
+            printBuffer(curFree);
 
             bufferOffset = buffer + (i * 252);
-            memcpy(curFree + 3, bufferOffset, 252);
-
-            /* ### */
-            printBuffer(curFree);
-            if (readBlock(curDiskNum, 2, blockTwo) < 0) {
-                return -1;
+            if (i == n - 1) {
+                int rem = size % 252;
+                memcpy(curFree + 3, bufferOffset, rem); 
+            } else {
+                memcpy(curFree + 3, bufferOffset, 252);
             }
-            printBuffer(blockTwo);
+
+            printBuffer(curFree);
+            /* ### */
 
             if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
                 return -1;
