@@ -502,6 +502,9 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
         /* only modify the inode next pointer */
         inode[2] = 0;
     } else {
+        /* init file pointer to first file extent block, byte 0 */
+        inode[4] = 1;
+        inode[5] = 0;
 
         curFreeIdx = superblock[5];
         if (readBlock(curDiskNum, curFreeIdx, curFree) < 0) {
@@ -551,6 +554,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     }
 
     /* finally rewrite inode block */
+    inode[6] = size;
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return -1;
     }
@@ -714,6 +718,103 @@ int tfs_deleteFile(fileDescriptor FD) {
     return 0; 
 }
 
+int tfs_readByte(fileDescriptor FD, char *buffer) {
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return -1;
+    }
+
+    /* check if the file is already open */
+    int openListIdx = 6;
+    int fileIdx = 0;
+    int foundOpen = 0;
+    while (superblock[openListIdx] != 0) {
+        if (superblock[openListIdx] == FD) {
+            foundOpen = 1;
+            fileIdx = superblock[openListIdx];
+            break; 
+        }
+        openListIdx++; 
+    }
+    if (!foundOpen) {
+        printf("error\n");
+        return -1;
+    }
+
+    /* read the root dir inode */
+    char *rootdir;
+    rootdir = malloc(BLOCKSIZE * sizeof(char));
+    if (rootdir == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, 1, rootdir) < 0) {
+        return -1;
+    }
+
+    /* read the file inode */
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return -1;
+    }
+    if (readBlock(curDiskNum, fileIdx, inode) < 0) {
+        return -1;
+    }
+
+    int fpBi = inode[4];
+    int fpBo = inode[5];
+
+    int nExtents = (inode[6] + (BLOCKSIZE - 4) - 1) / (BLOCKSIZE - 4);
+
+    /* ----- check if FP is already past end of file */
+    char *block;
+    block = malloc(BLOCKSIZE * sizeof(char));
+    if (block == NULL) {
+        return -1;
+    }
+
+    int next = inode[2];
+    if (next == 0) {
+        printf("error\n");
+        return -1;
+    }
+
+    int llIdx = 1;
+    int blockFound = 0;
+    while (next != 0) {
+        if (readBlock(curDiskNum, next, block) < 0) {
+            return -1;
+        }
+
+        if (llIdx == fpBi) {
+            blockFound = 1;
+            break; 
+        }
+
+        llIdx++; 
+        next = block[2];
+    }
+
+    if (llIdx > nExtents) {
+        printf("fp beyond file\n");
+        return -1;
+    }
+
+    if (!blockFound) {
+        printf("error\n");
+        return -1;
+    }
+
+    buffer[0] = block[3 + fpBo];
+
+    return 0;
+}
+
 /* TODO temp for testing */
 int main(int argc, char** argv) {
 
@@ -740,17 +841,13 @@ int main(int argc, char** argv) {
     // int dres = tfs_deleteFile(fd);
 
     /* ---- write tests */
-    int sizeToWrite = 30;
-    char *toWrite = (char*) malloc(sizeToWrite * sizeof(char));
-    if (toWrite == NULL) {
-        printf("error allocaitng\n");
-        return -1;
-    }
-    srand((unsigned int)time(NULL));
-    int i; 
+    int sizeToWrite = 10;
+    char toWrite[sizeToWrite]; 
+    int i;
     for (i = 0; i < sizeToWrite; i++) {
-        toWrite[i] = (char)(rand() % 256);
+        toWrite[i] = 'a' + i;
     }
+    toWrite
     int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
 
     sizeToWrite = 300;
@@ -765,9 +862,16 @@ int main(int argc, char** argv) {
     }
     wres = tfs_writeFile(fd, toWritet, sizeToWrite);
 
+    int dres = tfs_deleteFile(fd);
 
-
-    // dres = tfs_deleteFile(fd2);
+    /* ---- readByte tests */
+    char *rb = (char*)malloc(1 * sizeof(char));
+    if (rb == NULL) {
+        printf("error allocating\n");
+        return -1;
+    }
+    int rbres = tfs_readByte(fd2, rb);
+    printf("Read byte: %s\n", rb);
 
     printf("got to end of main!\n");
 
