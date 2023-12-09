@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <time.h>
 #include "libDisk.h"
 #include "tinyFS.h"
 #include "libTinyFS.h"
@@ -22,7 +23,7 @@
 */
 
 /* TODO temp for testing */
-#define NUM_BLOCKS 7
+#define NUM_BLOCKS 8
 
 #define VALID_BYTE 0x44
 char* curDisk = NULL;
@@ -405,13 +406,10 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     int curFileIdx; 
     char *curFile;
     char *freeBlock;
-    char *curFree;
 
-    curFile = malloc(BLOCKSIZE * sizeof(char));
-    if (curFile == NULL) {
-        return -1;
-    }
-    if (readBlock(curDiskNum, inode[2], curFile) < 0) {
+    char *curFree;
+    curFree = malloc(BLOCKSIZE * sizeof(char));
+    if (curFree == NULL) {
         return -1;
     }
 
@@ -449,11 +447,15 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
         /* ----- traverse file extent blocks, and turn into free blocks 
             and append to free LL 
         */
-        curFree = malloc(BLOCKSIZE * sizeof(char));
-        if (curFree == NULL) {
+        if (readBlock(curDiskNum, prevBlockIdx, curFree) < 0) {
             return -1;
         }
-        if (readBlock(curDiskNum, prevBlockIdx, curFree) < 0) {
+
+        curFile = malloc(BLOCKSIZE * sizeof(char));
+        if (curFile == NULL) {
+            return -1;
+        }
+        if (readBlock(curDiskNum, inode[2], curFile) < 0) {
             return -1;
         }
 
@@ -513,7 +515,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             nextFreeIdx = curFree[2];
 
             memset(curFree, 0, BLOCKSIZE);
-            curFree[0] = 4;
+            curFree[0] = 3;
             curFree[1] = 0x44;
             curFree[2] = nextFreeIdx;
             bufferOffset = buffer + (i * 252);
@@ -714,13 +716,17 @@ int tfs_deleteFile(fileDescriptor FD) {
 /* TODO temp for testing */
 int main(int argc, char** argv) {
 
+    /* ---- mkfs test */
     tfs_mkfs("a.txt", BLOCKSIZE * NUM_BLOCKS);
 
     printf("got here\n");
 
+    /* ---- mount test */
     int res = tfs_mount("a.txt");
     printf("res: %d\n", res);
     printf("curDisk = %s\n", curDisk);
+
+    /* ---- open and delete files test */
 
     int fd = tfs_openFile("TFS_f1");
 
@@ -729,11 +735,23 @@ int main(int argc, char** argv) {
     int fd2 = tfs_openFile("TFS_f2");
 
     fd2 = tfs_openFile("TFS_f2");
-    int fd3  = tfs_openFile("TFS_f3");
 
+    int dres = tfs_deleteFile(fd);
 
-    int dres = tfs_deleteFile(fd2);
-    dres = tfs_deleteFile(fd);
+    /* ---- write tests */
+    int sizeToWrite = 300;
+    char *toWrite = (char*) malloc(sizeToWrite * sizeof(char));
+    if (toWrite == NULL) {
+        printf("error allocaitng\n");
+        return -1;
+    }
+    srand((unsigned int)time(NULL));
+    int i; 
+    for (i = 0; i < sizeToWrite; i++) {
+        toWrite[i] = (char)(rand() % 256);
+    }
+    int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
+
 
     printf("got to end of main!\n");
 
