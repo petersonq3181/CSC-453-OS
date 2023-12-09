@@ -436,7 +436,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     }
 
     /* if there's not enough free space, exit */
-    if (n > nFree - 1) {
+    if (n > nFree) {
         printf("error\n");
         return -1;
     }
@@ -493,6 +493,9 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             }
             curFileIdx = nextFileIdx;
         }
+
+        free(curFile);
+        curFile = NULL;
     }
 
     if (n < 1) {
@@ -538,7 +541,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
 
         /* write last file extent (no further pointers) */
         memset(curFree, 0, BLOCKSIZE);
-        curFree[0] = 4;
+        curFree[0] = 3;
         curFree[1] = 0x44;
         bufferOffset = buffer + ((n - 1) * 252);
         memcpy(curFree + 3, bufferOffset, 252);
@@ -558,8 +561,6 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     rootdir = NULL;
     free(inode);
     inode = NULL;
-    free(curFile);
-    curFile = NULL;
     free(freeBlock);
     freeBlock = NULL;
     free(curFree);
@@ -736,10 +737,10 @@ int main(int argc, char** argv) {
 
     fd2 = tfs_openFile("TFS_f2");
 
-    int dres = tfs_deleteFile(fd);
+    // int dres = tfs_deleteFile(fd);
 
     /* ---- write tests */
-    int sizeToWrite = 300;
+    int sizeToWrite = 30;
     char *toWrite = (char*) malloc(sizeToWrite * sizeof(char));
     if (toWrite == NULL) {
         printf("error allocaitng\n");
@@ -752,7 +753,21 @@ int main(int argc, char** argv) {
     }
     int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
 
-    dres = tfs_deleteFile(fd2);
+    sizeToWrite = 300;
+    char *toWritet = (char*) malloc(sizeToWrite * sizeof(char));
+    if (toWritet == NULL) {
+        printf("error allocaitng\n");
+        return -1;
+    }
+    srand((unsigned int)time(NULL)); 
+    for (i = 0; i < sizeToWrite; i++) {
+        toWritet[i] = (char)(rand() % 256);
+    }
+    wres = tfs_writeFile(fd, toWritet, sizeToWrite);
+
+
+
+    // dres = tfs_deleteFile(fd2);
 
     printf("got to end of main!\n");
 
