@@ -1000,7 +1000,8 @@ int tfs_readdir() {
     return 0;
 }
 
-int tfs_makeRO(char *name) {
+/* helper for makeRO and makeRW */
+int get_fileInodeIdx(char *name) {
     /* read the superblock */
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
@@ -1046,15 +1047,66 @@ int tfs_makeRO(char *name) {
         return TINYFS_ERR_FILE_NOT_FOUND;
     }
 
+    int res = rootdir[curFileIdx];
+
+    free(superblock);
+    superblock = NULL;
+    free(rootdir);
+    rootdir = NULL;
+    free(inode);
+    inode = NULL;
+    
+    return res; 
+}
+
+int tfs_makeRO(char *name) {
+    int inodeIdx = get_fileInodeIdx(name);
+
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+
+    if (readBlock(curDiskNum, inodeIdx, inode) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+    
     /* make read only (set read only bit) */
     inode[16] = 1;
 
-    printf("GG: %d\n", rootdir[curFileIdx]);
-    printf("GG: %d\n", curFileIdx);
-
-    if (writeBlock(curDiskNum, rootdir[curFileIdx], inode) < 0) {
+    if (writeBlock(curDiskNum, inodeIdx, inode) < 0) {
         return TINYFS_ERR_READ_BLCK;
     }
+
+    free(inode);
+    inode = NULL; 
+
+    return 0;
+}
+
+int tfs_makeRW(char *name) {
+    int inodeIdx = get_fileInodeIdx(name);
+
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+
+    if (readBlock(curDiskNum, inodeIdx, inode) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+    
+    /* make read only (set read only bit) */
+    inode[16] = 0;
+
+    if (writeBlock(curDiskNum, inodeIdx, inode) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    free(inode);
+    inode = NULL; 
 
     return 0;
 }
@@ -1147,6 +1199,7 @@ int main(int argc, char** argv) {
 
     /* tfs_makeRO test */
     int makerores = tfs_makeRO("newn");
+    makerores = tfs_makeRW("newn");
 
 
     printf("got to end of main!\n");
