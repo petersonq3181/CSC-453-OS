@@ -10,6 +10,7 @@
 #include "libDisk.h"
 #include "tinyFS.h"
 #include "libTinyFS.h"
+#include "TinyFS_errno.h"
 
 
 /* 
@@ -29,7 +30,7 @@
 char* curDisk = NULL;
 int curDiskNum = -1;
 
-/* helper */
+/* helper funcs */
 int compareFilename(char *buffer, char *name) {
     /* hardcoded for my implementation of filename in file's inode block */
     char *filename = &buffer[7];
@@ -63,7 +64,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     char *buffer;
     buffer = malloc(BLOCKSIZE * sizeof(char));
     if (buffer == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     memset(buffer, 0, BLOCKSIZE);
     buffer[0] = 1;
@@ -74,7 +75,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     
     int retValue = writeBlock(curDiskNum, 0, buffer);
     if (retValue < 0) {
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     /* setup root dir inode block */
@@ -83,7 +84,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     buffer[1] = VALID_BYTE;
     retValue = writeBlock(curDiskNum, 1, buffer);
     if (retValue < 0) {
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     /* setup all middle blocks (init as free blocks) */
@@ -94,7 +95,7 @@ int tfs_mkfs(char *filename, int nBytes) {
 
         retValue = writeBlock(curDiskNum, i, buffer);
         if (retValue < 0) {
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
     }
 
@@ -102,7 +103,7 @@ int tfs_mkfs(char *filename, int nBytes) {
     buffer[2] = 0;
     retValue = writeBlock(curDiskNum, nBlocks - 1, buffer);
     if (retValue < 0) {
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     free(buffer);
@@ -119,10 +120,10 @@ int tfs_mount(char *diskname) {
     char *buffer;
     buffer = malloc(BLOCKSIZE * sizeof(char));
     if (buffer == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, buffer) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* get nBlocks out of superblock */
@@ -132,11 +133,11 @@ int tfs_mount(char *diskname) {
     int i;
     for (i = 0; i < nBlocks; i++) {
         if (readBlock(curDiskNum, i, buffer) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         if ((unsigned char) buffer[1] != VALID_BYTE) {
-            return -1;
+            return TINYFS_ERR_INVALID_FS;
         }
     }
 
@@ -146,7 +147,7 @@ int tfs_mount(char *diskname) {
     /* set current mounted file system */
     curDisk = (char *) malloc(strlen(diskname) + 1);
     if (curDisk == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     strcpy(curDisk, diskname);
 
@@ -155,7 +156,7 @@ int tfs_mount(char *diskname) {
 
 int tfs_unmount(void) {
     if (curDisk == NULL) {
-        return -1;
+        return TINYFS_ERR_NO_FS;
     }
 
     curDisk = NULL;
@@ -164,41 +165,39 @@ int tfs_unmount(void) {
 
 fileDescriptor tfs_openFile(char *name) {
     if (strlen(name) > 8) {
-        printf("error\n");
-        return -1; 
+        return TINYFS_ERR_NAME_TOO_LONG;
     }
     
     /* read the superblock */
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
     if (superblock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, superblock) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* read the root dir inode */
     char *rootdir;
     rootdir = malloc(BLOCKSIZE * sizeof(char));
     if (rootdir == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 1, rootdir) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* make sure dir is not full, and open file list is not full */
     if (rootdir[BLOCKSIZE - 1] != 0 || superblock[BLOCKSIZE - 1] != 0) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE;
     }
 
     /* traverse directory for if file already exists */
     char *buffer;
     buffer = malloc(BLOCKSIZE * sizeof(char));
     if (buffer == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     int fileExists = 0;
     int fileInodeIdx = -1;
@@ -206,7 +205,7 @@ fileDescriptor tfs_openFile(char *name) {
     while (rootdir[inodeListIdx] != 0) {
         memset(buffer, 0, BLOCKSIZE);
         if (readBlock(curDiskNum, rootdir[inodeListIdx], buffer) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         if (compareFilename(buffer, name)) {
@@ -244,7 +243,7 @@ fileDescriptor tfs_openFile(char *name) {
         while (freeBlockIdx != 0) { 
             memset(buffer, 0, BLOCKSIZE);
             if (readBlock(curDiskNum, freeBlockIdx, buffer) < 0) {
-                return -1;
+                return TINYFS_ERR_READ_BLCK;
             }
 
             if (buffer[2] == 0) { 
@@ -269,7 +268,7 @@ fileDescriptor tfs_openFile(char *name) {
         buffer[2] = 0;
         int retValue = writeBlock(curDiskNum, prevFreeBlockIdx, buffer);
         if (retValue < 0) {
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
 
         /* ------ turn free block into new file's inode */
@@ -280,7 +279,7 @@ fileDescriptor tfs_openFile(char *name) {
         strcpy(&buffer[7], name);
         retValue = writeBlock(curDiskNum, freeBlockIdx, buffer);
         if (retValue < 0) {
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
 
         /* ----- edit meta-data lists */
@@ -292,7 +291,7 @@ fileDescriptor tfs_openFile(char *name) {
         superblock[openListIdx] = freeBlockIdx;
         retValue = writeBlock(curDiskNum, 0, superblock);
         if (retValue < 0) {
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
 
         /* add new open file to directory list */
@@ -303,7 +302,7 @@ fileDescriptor tfs_openFile(char *name) {
         rootdir[dirListIdx] = freeBlockIdx;
         retValue = writeBlock(curDiskNum, 1, rootdir);
         if (retValue < 0) {
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
 
         fd = freeBlockIdx;
@@ -324,10 +323,10 @@ int tfs_closeFile(fileDescriptor FD) {
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
     if (superblock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, superblock) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* check if the file is already open */
@@ -340,10 +339,8 @@ int tfs_closeFile(fileDescriptor FD) {
         }
         openListIdx++; 
     }
-
     if (!foundOpen) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_NOT_OPEN;
     }
 
     /* update open file list */
@@ -355,7 +352,7 @@ int tfs_closeFile(fileDescriptor FD) {
     /* write the updated superblock back to disk */
     if (writeBlock(curDiskNum, 0, superblock) < 0) {
         printf("error\n");
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     free(superblock);
@@ -369,10 +366,10 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
     if (superblock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, superblock) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* check if the file is already open */
@@ -388,28 +385,27 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
         openListIdx++; 
     }
     if (!foundOpen) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_NOT_OPEN;
     }
 
     /* read the root dir inode */
     char *rootdir;
     rootdir = malloc(BLOCKSIZE * sizeof(char));
     if (rootdir == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 1, rootdir) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* read the file inode */
     char *inode;
     inode = malloc(BLOCKSIZE * sizeof(char));
     if (inode == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, fileIdx, inode) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     int n = (size + (BLOCKSIZE - 4) - 1) / (BLOCKSIZE - 4);
@@ -422,25 +418,24 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     char *curFree;
     curFree = malloc(BLOCKSIZE * sizeof(char));
     if (curFree == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
 
     /* traverse to end of free-block LL */
     freeBlock = malloc(BLOCKSIZE * sizeof(char));
     if (freeBlock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     int freeBlockIdx = superblock[5];
     int prevBlockIdx = superblock[5];
     if (freeBlockIdx == 0) {
-        printf("error\n");
-        return - 1;
+        return TINYFS_ERR_DISK_FULL;
     }
     int nFree = 0;
     while (freeBlockIdx != 0) { 
         memset(freeBlock, 0, BLOCKSIZE);
         if (readBlock(curDiskNum, freeBlockIdx, freeBlock) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
         nFree++; 
         prevBlockIdx = freeBlockIdx;
@@ -449,8 +444,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
 
     /* if there's not enough free space, exit */
     if (n > nFree) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_DISK_FULL;
     }
 
     /* clear any current file extents, and free them, (b/c overwrite) */
@@ -460,15 +454,15 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             and append to free LL 
         */
         if (readBlock(curDiskNum, prevBlockIdx, curFree) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         curFile = malloc(BLOCKSIZE * sizeof(char));
         if (curFile == NULL) {
-            return -1;
+            return TINYFS_ERR_MALLOC_FAIL;
         }
         if (readBlock(curDiskNum, inode[2], curFile) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         curFreeIdx = prevBlockIdx;
@@ -481,7 +475,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             curFree[2] = curFileIdx; 
             if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
                 printf("error\n");
-                return -1;
+                return TINYFS_ERR_WRITE_BLCK;
             }
 
             /* rewrite file block to be a free block */
@@ -490,7 +484,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             curFile[1] = 0x44;
             if (writeBlock(curDiskNum, curFileIdx, curFile) < 0) {
                 printf("error\n");
-                return -1;
+                return TINYFS_ERR_WRITE_BLCK;
             }
 
             if (nextFileIdx == 0) {
@@ -501,7 +495,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             curFreeIdx = curFileIdx;
             
             if (readBlock(curDiskNum, nextFileIdx, curFile) < 0) {
-                return -1;
+                return TINYFS_ERR_READ_BLCK;
             }
             curFileIdx = nextFileIdx;
         }
@@ -520,7 +514,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
 
         curFreeIdx = superblock[5];
         if (readBlock(curDiskNum, curFreeIdx, curFree) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         /* update inode to point to beginning of file extents */        
@@ -547,19 +541,19 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             }
 
             if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
-                return -1;
+                return TINYFS_ERR_WRITE_BLCK;
             }
 
             curFreeIdx = nextFreeIdx;
             if (readBlock(curDiskNum, nextFreeIdx, curFree) < 0) {
-                return -1;
+                return TINYFS_ERR_READ_BLCK;
             }
         }
 
         /* update superblock to point to new beginning of free LL */
         superblock[5] = curFree[2];
         if (writeBlock(curDiskNum, 0, superblock) < 0) {
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
     }
 
@@ -567,7 +561,7 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
     inode[6] = size;
 
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     free(superblock);
@@ -592,20 +586,20 @@ int tfs_deleteFile(fileDescriptor FD) {
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
     if (superblock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, superblock) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* read the root dir inode */
     char *rootdir;
     rootdir = malloc(BLOCKSIZE * sizeof(char));
     if (rootdir == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 1, rootdir) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* traverse directory for if file already exists */
@@ -621,8 +615,7 @@ int tfs_deleteFile(fileDescriptor FD) {
         inodeListIdx++; 
     }
     if (!fileExists) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_NOT_FOUND;
     }
     /* delete file pointer from root dir list */
     while (rootdir[inodeListIdx] != 0) {
@@ -633,26 +626,24 @@ int tfs_deleteFile(fileDescriptor FD) {
         rootdir[inodeListIdx - 1] = 0;
     }
     if (writeBlock(curDiskNum, 1, rootdir) < 0) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     /* traverse to end of free-block LL */
     char *freeBlock;
     freeBlock = malloc(BLOCKSIZE * sizeof(char));
     if (freeBlock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     int freeBlockIdx = superblock[5];
     int prevBlockIdx = superblock[5];
     if (freeBlockIdx == 0) {
-        printf("error\n");
-        return - 1;
+        return TINYFS_ERR_DISK_FULL;
     }
     while (freeBlockIdx != 0) { 
         memset(freeBlock, 0, BLOCKSIZE);
         if (readBlock(curDiskNum, freeBlockIdx, freeBlock) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         prevBlockIdx = freeBlockIdx;
@@ -665,19 +656,19 @@ int tfs_deleteFile(fileDescriptor FD) {
     char *curFile;
     curFile = malloc(BLOCKSIZE * sizeof(char));
     if (curFile == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, fileInodeIdx, curFile) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     char *curFree;
     curFree = malloc(BLOCKSIZE * sizeof(char));
     if (curFree == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, prevBlockIdx, curFree) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     int curFreeIdx = prevBlockIdx;
@@ -690,7 +681,7 @@ int tfs_deleteFile(fileDescriptor FD) {
         curFree[2] = curFileIdx; 
         if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
             printf("error\n");
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
 
         /* rewrite file block to be a free block */
@@ -699,7 +690,7 @@ int tfs_deleteFile(fileDescriptor FD) {
         curFile[1] = 0x44;
         if (writeBlock(curDiskNum, curFileIdx, curFile) < 0) {
             printf("error\n");
-            return -1;
+            return TINYFS_ERR_WRITE_BLCK;
         }
 
         if (nextFileIdx == 0) {
@@ -710,7 +701,7 @@ int tfs_deleteFile(fileDescriptor FD) {
         curFreeIdx = curFileIdx;
         
         if (readBlock(curDiskNum, nextFileIdx, curFile) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
         curFileIdx = nextFileIdx;
     }
@@ -734,10 +725,10 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
     if (superblock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, superblock) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* check if the file is already open */
@@ -753,28 +744,27 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
         openListIdx++; 
     }
     if (!foundOpen) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_NOT_OPEN;
     }
 
     /* read the root dir inode */
     char *rootdir;
     rootdir = malloc(BLOCKSIZE * sizeof(char));
     if (rootdir == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 1, rootdir) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* read the file inode */
     char *inode;
     inode = malloc(BLOCKSIZE * sizeof(char));
     if (inode == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, fileIdx, inode) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     int fpBi = inode[4];
@@ -786,20 +776,19 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
     char *block;
     block = malloc(BLOCKSIZE * sizeof(char));
     if (block == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
 
     int next = inode[2];
     if (next == 0) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_NO_DATA;
     }
 
     int llIdx = 1;
     int blockFound = 0;
     while (next != 0) {
         if (readBlock(curDiskNum, next, block) < 0) {
-            return -1;
+            return TINYFS_ERR_READ_BLCK;
         }
 
         if (llIdx == fpBi) {
@@ -812,13 +801,11 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
     }
 
     if (llIdx > nExtents) {
-        printf("fp beyond file\n");
-        return -1;
+        return TINYFS_ERR_FILE_FP;
     }
 
     if (!blockFound) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_FP;
     }
 
     /* increment file pointer */
@@ -829,8 +816,7 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
         inode[5] += 1;
     }
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     buffer[0] = block[3 + fpBo];
@@ -857,10 +843,10 @@ int tfs_seek(fileDescriptor FD, int offset) {
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
     if (superblock == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, 0, superblock) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     /* check if the file is already open */
@@ -876,23 +862,21 @@ int tfs_seek(fileDescriptor FD, int offset) {
         openListIdx++; 
     }
     if (!foundOpen) {
-        printf("error\n");
-        return -1;
+        return TINYFS_ERR_FILE_NOT_OPEN;
     }
 
     /* read the file inode */
     char *inode;
     inode = malloc(BLOCKSIZE * sizeof(char));
     if (inode == NULL) {
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     if (readBlock(curDiskNum, fileIdx, inode) < 0) {
-        return -1;
+        return TINYFS_ERR_READ_BLCK;
     }
 
     if (offset > inode[6]) {
-        printf("offset greater than file size\n");
-        return -1; 
+        return TINYFS_ERR_OFFSET_FP;
     }
 
     /* modify and write back */
@@ -903,7 +887,7 @@ int tfs_seek(fileDescriptor FD, int offset) {
     inode[5] = fpBo; 
 
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
-        return -1;
+        return TINYFS_ERR_WRITE_BLCK;
     }    
 
     free(superblock);
@@ -942,7 +926,7 @@ int main(int argc, char** argv) {
     char *toWrite = (char*) malloc(sizeToWrite * sizeof(char));
     if (toWrite == NULL) {
         printf("error allocaitng\n");
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     int i; 
     for (i = 0; i < sizeToWrite; i++) {
@@ -972,7 +956,7 @@ int main(int argc, char** argv) {
     char *rb = (char*)malloc(2 * sizeof(char));
     if (rb == NULL) {
         printf("error allocating\n");
-        return -1;
+        return TINYFS_ERR_MALLOC_FAIL;
     }
     int rbres = tfs_readByte(fd2, rb);
     printf("Read byte: %c\n", rb[0]);
