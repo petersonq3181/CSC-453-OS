@@ -351,7 +351,6 @@ int tfs_closeFile(fileDescriptor FD) {
 
     /* write the updated superblock back to disk */
     if (writeBlock(curDiskNum, 0, superblock) < 0) {
-        printf("error\n");
         return TINYFS_ERR_WRITE_BLCK;
     }
 
@@ -474,7 +473,6 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             /* edit and rewrite free block */
             curFree[2] = curFileIdx; 
             if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
-                printf("error\n");
                 return TINYFS_ERR_WRITE_BLCK;
             }
 
@@ -483,7 +481,6 @@ int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
             curFile[0] = 4;
             curFile[1] = 0x44;
             if (writeBlock(curDiskNum, curFileIdx, curFile) < 0) {
-                printf("error\n");
                 return TINYFS_ERR_WRITE_BLCK;
             }
 
@@ -680,7 +677,6 @@ int tfs_deleteFile(fileDescriptor FD) {
         /* edit and rewrite free block */
         curFree[2] = curFileIdx; 
         if (writeBlock(curDiskNum, curFreeIdx, curFree) < 0) {
-            printf("error\n");
             return TINYFS_ERR_WRITE_BLCK;
         }
 
@@ -689,7 +685,6 @@ int tfs_deleteFile(fileDescriptor FD) {
         curFile[0] = 4;
         curFile[1] = 0x44;
         if (writeBlock(curDiskNum, curFileIdx, curFile) < 0) {
-            printf("error\n");
             return TINYFS_ERR_WRITE_BLCK;
         }
 
