@@ -949,10 +949,56 @@ int tfs_rename(fileDescriptor FD, char* newName) {
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return TINYFS_ERR_WRITE_BLCK; 
     }
+
+    free(superblock);
+    free(inode);
+    superblock = NULL;
+    inode = NULL; 
     
     return 0;
 }
 
+int tfs_readdir() {
+    /* read the root dir inode */
+    char *rootdir;
+    rootdir = malloc(BLOCKSIZE * sizeof(char));
+    if (rootdir == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, 1, rootdir) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    /* setup buffer for file inodes */
+    char *inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+
+    printf("Directory content:\n");
+
+    int curInodeIdx = 4;
+    while (rootdir[curInodeIdx] != 0) {
+
+        memset(inode, 0, BLOCKSIZE);
+        if (readBlock(curDiskNum, rootdir[curInodeIdx], inode) < 0) {
+            return TINYFS_ERR_READ_BLCK;
+        }
+
+        printf("\t filename: %s \t file-size: %d \n", &inode[7], inode[6]);
+
+        curInodeIdx++; 
+    }
+
+    fflush(stdout);
+
+    free(rootdir);
+    rootdir = NULL;
+    free(inode);
+    inode = NULL;
+
+    return 0;
+}
 
 
 /* TODO temp for testing */
@@ -1035,6 +1081,9 @@ int main(int argc, char** argv) {
     /* tfs_rename testing */
     int renameres = tfs_rename(fd, "newn");
     printf("rename res: %d\n", renameres);
+
+    /* readdir testing */
+    int readres = tfs_readdir();
 
 
     printf("got to end of main!\n");
