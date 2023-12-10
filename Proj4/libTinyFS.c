@@ -159,6 +159,7 @@ int tfs_unmount(void) {
         return TINYFS_ERR_NO_FS;
     }
 
+    free(curDisk);
     curDisk = NULL;
     return 0; 
 }
@@ -360,7 +361,7 @@ int tfs_closeFile(fileDescriptor FD) {
     return 0;
 }
 
-int tfs_writeFile(fileDescriptor FD,char *buffer, int size) {
+int tfs_writeFile(fileDescriptor FD, char *buffer, int size) {
     /* read the superblock */
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
@@ -893,6 +894,67 @@ int tfs_seek(fileDescriptor FD, int offset) {
     return 0;
 }
 
+int tfs_rename(fileDescriptor FD, char* newName) {
+    /* renames a
+    file. New name should be passed in. File has to be open. */
+
+    if (strlen(newName) > 8) {
+        return TINYFS_ERR_NAME_TOO_LONG;
+    }
+
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    /* check if the file is already open */
+    int openListIdx = 6;
+    int fileIdx = 0;
+    int foundOpen = 0;
+    while (superblock[openListIdx] != 0) {
+        if (superblock[openListIdx] == FD) {
+            foundOpen = 1;
+            fileIdx = superblock[openListIdx];
+            break; 
+        }
+        openListIdx++; 
+    }
+    if (!foundOpen) {
+        return TINYFS_ERR_FILE_NOT_OPEN;
+    }
+
+    /* read the file inode */
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, fileIdx, inode) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    /* make sure to clear the old name */
+    int i;
+    int strIdx = 7;
+    for (i = strIdx; i <= strIdx + 8; i++) {
+        inode[i] = '\0';
+    }
+
+    strcpy(&inode[strIdx], newName);
+    if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
+        return TINYFS_ERR_WRITE_BLCK; 
+    }
+    
+    return 0;
+}
+
+
+
 /* TODO temp for testing */
 int main(int argc, char** argv) {
 
@@ -969,6 +1031,10 @@ int main(int argc, char** argv) {
     seekres = tfs_seek(fd2, 2);
     rbres = tfs_readByte(fd2, rb);
     printf("Read byte: %c\n", rb[0]);
+
+    /* tfs_rename testing */
+    int renameres = tfs_rename(fd, "newn");
+    printf("rename res: %d\n", renameres);
 
 
     printf("got to end of main!\n");
