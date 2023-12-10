@@ -49,7 +49,6 @@ int openDisk(char *filename, int nBytes) {
 
     /* check nBytes is greater than BLOCKSIZE */
     if (nBytes > 0 && nBytes < BLOCKSIZE) {
-        /* TODO errnos */
         return -1;
     }
 
@@ -101,7 +100,6 @@ int openDisk(char *filename, int nBytes) {
 
         /* nBytes is 0 and no disk exists with the given filename; return error */
         if (!foundCase2 && !foundCase3) {
-            /* TODO errno */
             return -1; 
         }
     }
@@ -121,7 +119,6 @@ int openDisk(char *filename, int nBytes) {
 
         DiskLL* new = (DiskLL*) malloc(sizeof(DiskLL));
         if (new == NULL) {
-            /* TODO errno */
             return -1;
         }
         
@@ -192,17 +189,11 @@ int closeDisk(int disk) {
         cur = cur->next;
     }
 
-    /* TODO errno */
     return -1;
 }
 
 int readBlock(int disk, int bNum, void *block) {
-    /* TODO how to handle 
-    - the specified disk does not exist / isn't configured 
-    - offset into file is out of range (could put in pread error conditional)
-    */
-
-
+   
     DiskLL *cur = diskHead;
     while (cur != NULL) {
         if (cur->id == disk) {
@@ -212,15 +203,12 @@ int readBlock(int disk, int bNum, void *block) {
     }
 
     if (cur == NULL) {
-        /* TODO errno */
         return -1;
     }
 
     /* open the file */
     int fd = open(cur->filename, O_RDONLY);
     if (fd == -1) {
-        /* TODO errno */
-        printf("entered readBlock error: unable to open file\n");
         return -1;
     }
 
@@ -228,19 +216,14 @@ int readBlock(int disk, int bNum, void *block) {
 
     ssize_t bytesRead = pread(fd, block, BLOCKSIZE, offset);
     if (bytesRead == -1) {
-        fprintf(stderr, "pread failed: %s\n", strerror(errno));
 
-
-        /* TODO errno */
         if (close(fd) == -1) {
-            printf("Error closing file '%s'\n", cur->filename);
             return 1;
         }
         return -1;
     }
 
     if (close(fd) == -1) {
-        printf("Error closing file '%s'\n", cur->filename);
         return 1;
     }
 
@@ -257,16 +240,12 @@ int writeBlock(int disk, int bNum, void *block) {
     }
 
     if (cur == NULL) {
-        /* TODO errno */
-        printf("entered writeBlock error 1\n");
         return -1;
     }
 
     /* open the file */
     int fd = open(cur->filename, O_WRONLY);
     if (fd == -1) {
-        /* TODO errno */
-        printf("entered writeBlock error: unable to open file\n");
         return -1;
     }
 
@@ -274,11 +253,7 @@ int writeBlock(int disk, int bNum, void *block) {
 
     ssize_t bytesWritten = pwrite(fd, block, BLOCKSIZE, offset);
     if (bytesWritten == -1 || bytesWritten < BLOCKSIZE) {
-        /* TODO errno */
-        printf("entered writeBlock error 2\n");
-
         if (close(fd) == -1) {
-            printf("entered writeBlock error: unable to close file\n");
             return -1;
         }
 
@@ -286,8 +261,6 @@ int writeBlock(int disk, int bNum, void *block) {
     }
 
     if (close(fd) == -1) {
-        /* TODO errno */
-        printf("entered writeBlock error: unable to close file\n");
         return -1;
     }
 
