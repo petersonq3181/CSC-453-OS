@@ -887,14 +887,9 @@ int tfs_seek(fileDescriptor FD, int offset) {
         return TINYFS_ERR_OFFSET_FP;
     }
 
-  
-
     /* modify and write back */
     int fpBi = (offset / 252) + 1; 
-    int fpBo = offset % 252; 
-
-    printf("in Seek: offset: %d, fpBi: %d, fpBo: %d\n", offset, fpBi, fpBo);
-    fflush(stdout);
+    int fpBo = offset % 252 - 1; 
 
     inode[4] = fpBi;
     inode[5] = fpBo; 
@@ -1002,7 +997,7 @@ int tfs_readdir() {
             return TINYFS_ERR_READ_BLCK;
         }
 
-        printf("\t filename: %s \t file-size: %d \n", &inode[7], inode[6]);
+        printf("\tfilename: %s \t file-size: %d \n", &inode[7], inode[6]);
 
         curInodeIdx++; 
     }
@@ -1177,8 +1172,6 @@ int tfs_writeByte(fileDescriptor FD, unsigned int data) {
 
         fpBi--; 
     }
-
-    printf("fpBi: %d, fpBo: %d\n", fpBi, fpBo);
     
     block[3 + fpBo] = data; 
 
@@ -1191,99 +1184,5 @@ int tfs_writeByte(fileDescriptor FD, unsigned int data) {
     free(block);
     block = NULL; 
     
-    return 0;
-}
-
-
-/* TODO temp for testing */
-int main(int argc, char** argv) {
-
-    /* ---- mkfs test */
-    tfs_mkfs("a.txt", BLOCKSIZE * NUM_BLOCKS);
-
-    printf("got here\n");
-
-    /* ---- mount test */
-    int res = tfs_mount("a.txt");
-    printf("res: %d\n", res);
-    printf("curDisk = %s\n", curDisk);
-
-    /* ---- open and delete files test */
-
-    int fd = tfs_openFile("TFS_f1");
-
-    printf("got here fd: %d\n", fd);
-
-    int fd2 = tfs_openFile("TFS_f2");
-
-    fd2 = tfs_openFile("TFS_f2");
-
-    /* ---- write tests */
-    int sizeToWrite = 10;
-    char *toWrite = (char*) malloc(sizeToWrite * sizeof(char));
-    if (toWrite == NULL) {
-        printf("error allocaitng\n");
-        return TINYFS_ERR_MALLOC_FAIL;
-    }
-    int i; 
-    for (i = 0; i < sizeToWrite; i++) {
-        toWrite[i] = 'A' + i; 
-    }
-
-    for (i = 0; i < sizeToWrite; i++) {
-        printf("%c ", toWrite[i]);
-    }
-    printf("\n");
-
-    int wres = tfs_writeFile(fd2, toWrite, sizeToWrite);
-
-    // sizeToWrite = 300;
-    // char *toWritet = (char*) malloc(sizeToWrite * sizeof(char));
-    // if (toWritet == NULL) {
-    //     printf("error allocaitng\n");
-    //     return -1;
-    // }
-    // srand((unsigned int)time(NULL)); 
-    // for (i = 0; i < sizeToWrite; i++) {
-    //     toWritet[i] = (char)(rand() % 256);
-    // }
-    // wres = tfs_writeFile(fd, toWritet, sizeToWrite);
-
-    /* ---- readByte and seek tests */
-    char *rb = (char*)malloc(2 * sizeof(char));
-    if (rb == NULL) {
-        printf("error allocating\n");
-        return TINYFS_ERR_MALLOC_FAIL;
-    }
-    int rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %c\n", rb[0]);
-
-    rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %c\n", rb[0]);
-
-    rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %c\n", rb[0]);
-
-    rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %c\n", rb[0]);
-
-    int seekres = tfs_seek(fd2, 5);
-
-    /* tfs_rename testing */
-    int renameres = tfs_rename(fd, "newn");
-    printf("rename res: %d\n", renameres);
-
-    /* readdir testing */
-    int readres = tfs_readdir();
-
-    /* tfs_makeRO test */
-    int makerores = tfs_makeRO("newn");
-    makerores = tfs_makeRW("newn");
-
-    /* tfs_writeByte test */
-    int wbres = tfs_writeByte(fd2, 7);
-
-    printf("got to end of main!\n");
-
     return 0;
 }
