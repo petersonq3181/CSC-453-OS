@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
     toWrite = NULL; 
 
     /* write a lot of random conent */
-    sizeToWrite = 250;
+    sizeToWrite = 1000;
     toWrite = (char*) malloc(sizeToWrite * sizeof(char));
     if (toWrite == NULL) {
         printf("error allocaitng\n");
@@ -107,6 +107,18 @@ int main(int argc, char **argv) {
     printf("\tRenaming TFS_f1 to newname1\n");
     tfs_rename(fd1, "newname1");
     tfs_readdir();
+
+
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    int size = 1000; 
+    inode[17] = size & 0xFF;
+    inode[18] = (size >> 8) & 0xFF;
+    int extractedX = ((unsigned char)inode[18] << 8) | (unsigned char)inode[17];
+    printf("extracted: %d\n", extractedX);
 
     return 0;
 }

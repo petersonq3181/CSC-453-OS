@@ -561,7 +561,8 @@ int tfs_writeFile(fileDescriptor FD, char *buffer, int size) {
     }
 
     /* finally rewrite inode block */
-    inode[6] = size;
+    inode[17] = size & 0xFF;
+    inode[18] = (size >> 8) & 0xFF;
 
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return TINYFS_ERR_WRITE_BLCK;
@@ -778,7 +779,9 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
     int fpBi = inode[4];
     int fpBo = inode[5];
 
-    int nExtents = (inode[6] + (BLOCKSIZE - 4) - 1) / (BLOCKSIZE - 4);
+    int fsize = ((unsigned char)inode[18] << 8) | (unsigned char)inode[17];
+
+    int nExtents = (fsize + (BLOCKSIZE - 4) - 1) / (BLOCKSIZE - 4);
 
     /* ----- check if FP is already past end of file */
     char *block;
@@ -883,7 +886,8 @@ int tfs_seek(fileDescriptor FD, int offset) {
         return TINYFS_ERR_READ_BLCK;
     }
 
-    if (offset > inode[6]) {
+    int fsize = ((unsigned char)inode[18] << 8) | (unsigned char)inode[17];
+    if (offset > fsize) {
         return TINYFS_ERR_OFFSET_FP;
     }
 
@@ -990,6 +994,7 @@ int tfs_readdir() {
     printf("Directory content:\n");
 
     int curInodeIdx = 4;
+    int fsize; 
     while (rootdir[curInodeIdx] != 0) {
 
         memset(inode, 0, BLOCKSIZE);
@@ -997,7 +1002,8 @@ int tfs_readdir() {
             return TINYFS_ERR_READ_BLCK;
         }
 
-        printf("\tfilename: %s \t file-size: %d \n", &inode[7], inode[6]);
+        fsize = ((unsigned char)inode[18] << 8) | (unsigned char)inode[17];
+        printf("\tfilename: %s \t file-size: %d \n", &inode[7], fsize);
 
         curInodeIdx++; 
     }
