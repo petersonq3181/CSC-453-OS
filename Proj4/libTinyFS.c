@@ -604,9 +604,6 @@ int tfs_writeFile(fileDescriptor FD, char *buffer, int size) {
 }
 
 int tfs_deleteFile(fileDescriptor FD) {
-    /* attempt to first close the file if necessary */
-    tfs_closeFile(FD); 
-
     /* read the superblock */
     char *superblock;
     superblock = malloc(BLOCKSIZE * sizeof(char));
@@ -656,6 +653,10 @@ int tfs_deleteFile(fileDescriptor FD) {
     if (curFile[16]) {
         return TINYFS_ERR_READ_ONLY; 
     }
+
+    /* attempt to first close the file if necessary */
+    tfs_closeFile(FD); 
+
 
     /* delete file pointer from root dir list */
     while (rootdir[inodeListIdx] != 0) {

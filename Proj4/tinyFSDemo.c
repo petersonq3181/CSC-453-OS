@@ -120,12 +120,12 @@ int main(int argc, char **argv) {
         printf("\ttfs_writeFile failed as expected\n");
     }
     tfs_makeRW("newname1");
-    tfs_writeByte(fd2, 3);
+    tfs_writeByte(fd1, 7);
     printf("\tSet newname1 file back to read-write, and wrote to it with writeByte\n");
 
     /* ----- Additional Feature e. Timestamps */
     time_t fd2creation = tfs_readFileInfo(fd2);
-    wait(1);
+    sleep(2);
     int fd5 = tfs_openFile("TFS_f5");
     time_t fd5creation = tfs_readFileInfo(fd5);
     printf("Additional Feature 3. Timestamps\n");

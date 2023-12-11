@@ -1,6 +1,7 @@
-For README
-
 Quinn Peterson (solo project) 
+
+
+
 
 TinyFS Implementation Notes 
 - 1 root directory (only 1 level) 
@@ -40,11 +41,15 @@ File inode:
     16: readOnly flag (init/default as 0) 
     17: filesize 
     18: filesize 
+    20 → size(time_t): timestamp -- creation 
+    40 → size(time_t): timestamp -- modification  
+    60 → size(time_t): timestamp -- access 
 
 Free block: 
     0: 4
     1: 0x44
     2: pointer to next free block index 
+
 
 
 
@@ -59,6 +64,20 @@ Additional Feature d. Read-only and writeByte support
 - when readOnly is set, tfs_writeFile, tfs_deleteFile, and tfs_writeByte fail
 - i show the above bullet point in the demo, and show that tfs_writeByte also works
 - tfs_writeByte writes a byte to the files current file pointer
+
+Additional Feature e. Timestamps
+- see inode byte def above for where creation, modification, and access timestamps are saved 
+- all times are a time_t and are in seconds 
+- creation
+    - set in tfs_openFile() 
+- modification 
+    - set in tfs_writeFile(), tfs_writeByte(), and tfs_seek() 
+- access 
+    - set in tfs_readByte() 
+- tfs_readFileInfo(fileDescriptor FD) returns the file’s creation time in seconds 
+- this is shown to work by printing the times of the creation of files, with a wait() between 
+    - it can also be seen in the inode block's upon viewing with something like hexdump -C 
+
 
 
 
