@@ -408,6 +408,11 @@ int tfs_writeFile(fileDescriptor FD, char *buffer, int size) {
         return TINYFS_ERR_READ_BLCK;
     }
 
+    /* fail if file is read only */
+    if (inode[16]) {
+        return TINYFS_ERR_READ_ONLY; 
+    }
+
     int n = (size + (BLOCKSIZE - 4) - 1) / (BLOCKSIZE - 4);
 
     int curFreeIdx;
@@ -615,6 +620,21 @@ int tfs_deleteFile(fileDescriptor FD) {
     if (!fileExists) {
         return TINYFS_ERR_FILE_NOT_FOUND;
     }
+
+    char *curFile;
+    curFile = malloc(BLOCKSIZE * sizeof(char));
+    if (curFile == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, fileInodeIdx, curFile) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    /* fail if file is read only */
+    if (curFile[16]) {
+        return TINYFS_ERR_READ_ONLY; 
+    }
+
     /* delete file pointer from root dir list */
     while (rootdir[inodeListIdx] != 0) {
         rootdir[inodeListIdx] = rootdir[inodeListIdx + 1];
@@ -651,14 +671,6 @@ int tfs_deleteFile(fileDescriptor FD) {
     /* ----- traverse file extent blocks, and turn into free blocks 
         and append to free LL 
     */
-    char *curFile;
-    curFile = malloc(BLOCKSIZE * sizeof(char));
-    if (curFile == NULL) {
-        return TINYFS_ERR_MALLOC_FAIL;
-    }
-    if (readBlock(curDiskNum, fileInodeIdx, curFile) < 0) {
-        return TINYFS_ERR_READ_BLCK;
-    }
 
     char *curFree;
     curFree = malloc(BLOCKSIZE * sizeof(char));

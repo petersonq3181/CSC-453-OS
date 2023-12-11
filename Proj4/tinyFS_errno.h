@@ -15,6 +15,7 @@
 #define TINYFS_ERR_FILE_NO_DATA    -11 /* File has no data */
 #define TINYFS_ERR_FILE_FP         -12 /* FP beyond file content */
 #define TINYFS_ERR_OFFSET_FP       -13 /* Offset beyond file content */
+#define TINYFS_ERR_READ_ONLY       -14 /* Offset beyond file content */
 
 
 #endif
