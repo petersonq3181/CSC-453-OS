@@ -875,9 +875,14 @@ int tfs_seek(fileDescriptor FD, int offset) {
         return TINYFS_ERR_OFFSET_FP;
     }
 
+  
+
     /* modify and write back */
     int fpBi = (offset / 252) + 1; 
     int fpBo = offset % 252; 
+
+    printf("in Seek: offset: %d, fpBi: %d, fpBo: %d\n", offset, fpBi, fpBo);
+    fflush(stdout);
 
     inode[4] = fpBi;
     inode[5] = fpBo; 
@@ -1076,7 +1081,7 @@ int tfs_makeRO(char *name) {
     inode[16] = 1;
 
     if (writeBlock(curDiskNum, inodeIdx, inode) < 0) {
-        return TINYFS_ERR_READ_BLCK;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     free(inode);
@@ -1102,7 +1107,7 @@ int tfs_makeRW(char *name) {
     inode[16] = 0;
 
     if (writeBlock(curDiskNum, inodeIdx, inode) < 0) {
-        return TINYFS_ERR_READ_BLCK;
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     free(inode);
@@ -1111,6 +1116,71 @@ int tfs_makeRW(char *name) {
     return 0;
 }
 
+int tfs_writeByte(fileDescriptor FD, unsigned int data) {
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    /* check if the file is already open */
+    int openListIdx = 6;
+    int fileIdx = 0;
+    int foundOpen = 0;
+    while (superblock[openListIdx] != 0) {
+        if (superblock[openListIdx] == FD) {
+            foundOpen = 1;
+            fileIdx = superblock[openListIdx];
+            break; 
+        }
+        openListIdx++; 
+    }
+    if (!foundOpen) {
+        return TINYFS_ERR_FILE_NOT_OPEN;
+    }
+
+    /* read the file inode */
+    char *block;
+    block = malloc(BLOCKSIZE * sizeof(char));
+    if (block == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, fileIdx, block) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    int fpBi = block[4]; 
+    int fpBo = block[5]; 
+
+    int blockIdx = fpBi;
+    while (fpBi > 0) {
+        blockIdx = block[2];
+        if (readBlock(curDiskNum, block[2], block) < 0) {
+            return TINYFS_ERR_READ_BLCK;
+        }
+
+        fpBi--; 
+    }
+
+    printf("fpBi: %d, fpBo: %d\n", fpBi, fpBo);
+    
+    block[3 + fpBo] = data; 
+
+    if (writeBlock(curDiskNum, blockIdx, block) < 0) {
+        return TINYFS_ERR_WRITE_BLCK;
+    }
+
+    free(superblock);
+    superblock = NULL; 
+    free(block);
+    block = NULL; 
+    
+    return 0;
+}
 
 
 /* TODO temp for testing */
@@ -1182,13 +1252,10 @@ int main(int argc, char** argv) {
     rbres = tfs_readByte(fd2, rb);
     printf("Read byte: %c\n", rb[0]);
 
-    int seekres = tfs_seek(fd2, 8);
     rbres = tfs_readByte(fd2, rb);
     printf("Read byte: %c\n", rb[0]);
 
-    seekres = tfs_seek(fd2, 2);
-    rbres = tfs_readByte(fd2, rb);
-    printf("Read byte: %c\n", rb[0]);
+    int seekres = tfs_seek(fd2, 5);
 
     /* tfs_rename testing */
     int renameres = tfs_rename(fd, "newn");
@@ -1201,6 +1268,8 @@ int main(int argc, char** argv) {
     int makerores = tfs_makeRO("newn");
     makerores = tfs_makeRW("newn");
 
+    /* tfs_writeByte test */
+    int wbres = tfs_writeByte(fd2, 7);
 
     printf("got to end of main!\n");
 
