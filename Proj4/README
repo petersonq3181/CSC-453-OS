@@ -1,0 +1,71 @@
+For README
+
+Quinn Peterson (solo project) 
+
+TinyFS Implementation Notes 
+- 1 root directory (only 1 level) 
+- free-blocks are kept as a linked list, the pointer to the beginning block is in the superblock 
+- open file table is stored as a list of inode indices in the superblock 
+- root dir file is hardcoded as a special inode structure in block 1
+- list of files is stored as a list of inode indices in the root dir inode 
+
+I chose to have a lot of metadata in the superblock and root dir inode block because this is safer than storing that stuff in memory. Writing it to disk itself makes it less likely to be corrupted. It is easy to access. One disadvantage is that the number of files that can be open, and the number of files in a directory, are limited by the size of the superblock and root inode block. 
+
+I also chose to have linked lists for the free blocks, and for how file extents extend from an inode, as this suits well with the block[2] pointer suggestion from the spec. Also, this is fairly simple and can potentially reduce fragmentation. 
+
+Superblock: (block index 0) 
+    0: 1
+    1: 0x44
+    2: pointer to root dir inode block (block index 1) 
+    3: empty 
+    4: nBlocks on file system 
+    5: pointer to beginning of free block LL (init as block index 2)
+    6: beginning of list of open file inode block indices 
+
+File inode for Root Dir: (block index 1) 
+    0: 2
+    1: 0x44
+    2: empty 
+    3: empty 
+    4: beginning of list of contained file inode block indices 
+
+File inode:
+    0: 2
+    1: 0x44
+    2: pointer to next file extent block 
+    3: empty 
+    4: file pointer – extent block LL index (ie. inode → 1 → 2 etc.)
+    5: file pointer – block offset 
+    7 → 14 chars for filename (8 total chars) 
+    16: readOnly flag (init/default as 0) 
+    17: filesize 
+    18: filesize 
+
+Free block: 
+    0: 4
+    1: 0x44
+    2: pointer to next free block index 
+
+
+
+Additional Functionality: 
+
+Additional Feature b. Directory listing and file renaming
+- directory listing is easy given my root dir inode structure
+- showed directory listing, along with file renaming, both work by calling these functions and printing the output 
+
+Additional Feature d. Read-only and writeByte support 
+- set a boolean byte as the read-only byte in a file’s inode 
+- when readOnly is set, tfs_writeFile, tfs_deleteFile, and tfs_writeByte fail
+- i show the above bullet point in the demo, and show that tfs_writeByte also works
+- tfs_writeByte writes a byte to the files current file pointer
+
+
+
+Limitations / Bugs: 
+
+- In my block structure definitions above, there are some bytes that I have set to represent a number. Because I've allocated one byte for that number, in those cases, the maximum number which can be represented is that which can be represented by 1 byte (ie. 255 in decimal). Thus works with a maximum of 255
+    - total blocks
+    - blocks in any of the linked lists (either free, or file extents) 
+
+- I did allocate 2-bytes to the file size in a file’s inode, thus allowing for a file size number to be larger than 255 

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include "tinyFS.h"
 #include "TinyFS_errno.h"
 
@@ -102,23 +103,40 @@ int main(int argc, char **argv) {
     printf("\tRead byte from file FD %d: %c\n", fd1, rb[0]);
 
     /* ----- Additional Feature b. Directory listing and file renaming */
-    printf("Additional Feature b. Directory listing and file renaming");
+    printf("Additional Feature b. Directory listing and file renaming\n");
     tfs_readdir();
     printf("\tRenaming TFS_f1 to newname1\n");
     tfs_rename(fd1, "newname1");
     tfs_readdir();
 
-
-    char *inode;
-    inode = malloc(BLOCKSIZE * sizeof(char));
-    if (inode == NULL) {
-        return TINYFS_ERR_MALLOC_FAIL;
+    /* ----- Additional Feature d. Read-only and writeByte support */
+    printf("Additional Feature d. Read-only and writeByte support\n");
+    printf("\tMade newname1 file RO, write and delete should fail:\n");
+    tfs_makeRO("newname1");
+    if (tfs_deleteFile(fd1) < 0) {
+        printf("\ttfs_deleteFile failed as expected\n");
     }
-    int size = 1000; 
-    inode[17] = size & 0xFF;
-    inode[18] = (size >> 8) & 0xFF;
-    int extractedX = ((unsigned char)inode[18] << 8) | (unsigned char)inode[17];
-    printf("extracted: %d\n", extractedX);
+    if (tfs_writeFile(fd1, toWrite, sizeToWrite) < 0) {
+        printf("\ttfs_writeFile failed as expected\n");
+    }
+    tfs_makeRW("newname1");
+    tfs_writeByte(fd2, 3);
+    printf("\tSet newname1 file back to read-write, and wrote to it with writeByte\n");
+
+    /* ----- Additional Feature e. Timestamps */
+    time_t fd2creation = tfs_readFileInfo(fd2);
+    wait(1);
+    int fd5 = tfs_openFile("TFS_f5");
+    time_t fd5creation = tfs_readFileInfo(fd5);
+    printf("Additional Feature 3. Timestamps\n");
+    printf("\tfd1 creation in seconds: %ld\n", fd2creation);
+    printf("\tfd5 creation in seconds: %ld\n", fd5creation);
+
+
+    free(toWrite);
+    toWrite = NULL;
+    free(rb);
+    rb = NULL;
 
     return 0;
 }

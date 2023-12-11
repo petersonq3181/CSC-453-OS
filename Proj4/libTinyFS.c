@@ -52,6 +52,25 @@ void printBuffer(char *buffer) {
     }
     fflush(stdout);
 }
+void writeTime(char *buffer, int offset) {
+    time_t ctime;
+    time(&ctime);
+
+    int i; 
+    for (i = 0; i < sizeof(time_t); i++) {
+        buffer[i + offset] = (ctime >> (8 * i)) & 0xFF;
+    }
+}
+time_t readTime(char *buffer, int offset) {
+    time_t extractedTime = 0;
+    int i; 
+    for (i = 0; i < sizeof(time_t); i++) {
+        extractedTime |= ((time_t)((unsigned char)buffer[i + offset]) << (8 * i));
+    }
+    return extractedTime;
+}
+
+
 
 int tfs_mkfs(char *filename, int nBytes) {
     
@@ -278,6 +297,7 @@ fileDescriptor tfs_openFile(char *name) {
         buffer[1] = VALID_BYTE;
         buffer[2] = 0;
         strcpy(&buffer[7], name);
+        writeTime(buffer, 20); /* write creation time */
         retValue = writeBlock(curDiskNum, freeBlockIdx, buffer);
         if (retValue < 0) {
             return TINYFS_ERR_WRITE_BLCK;
@@ -563,6 +583,7 @@ int tfs_writeFile(fileDescriptor FD, char *buffer, int size) {
     /* finally rewrite inode block */
     inode[17] = size & 0xFF;
     inode[18] = (size >> 8) & 0xFF;
+    writeTime(inode, 40); /* update modification timestamp */
 
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return TINYFS_ERR_WRITE_BLCK;
@@ -819,6 +840,8 @@ int tfs_readByte(fileDescriptor FD, char *buffer) {
         return TINYFS_ERR_FILE_FP;
     }
 
+    writeTime(inode, 60); /* update access timestamp */
+
     /* increment file pointer */
     if (inode[5] == 252) {
         inode[4] += 1;
@@ -897,6 +920,7 @@ int tfs_seek(fileDescriptor FD, int offset) {
 
     inode[4] = fpBi;
     inode[5] = fpBo; 
+    writeTime(inode, 40); /* update modification timestamp */
 
     if (writeBlock(curDiskNum, fileIdx, inode) < 0) {
         return TINYFS_ERR_WRITE_BLCK;
@@ -1129,6 +1153,57 @@ int tfs_makeRW(char *name) {
     return 0;
 }
 
+time_t tfs_readFileInfo(fileDescriptor FD) {
+    /* returns the file’s
+    creation time
+    */
+
+    /* read the superblock */
+    char *superblock;
+    superblock = malloc(BLOCKSIZE * sizeof(char));
+    if (superblock == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, 0, superblock) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    /* check if the file is already open */
+    int openListIdx = 6;
+    int fileIdx = 0;
+    int foundOpen = 0;
+    while (superblock[openListIdx] != 0) {
+        if (superblock[openListIdx] == FD) {
+            foundOpen = 1;
+            fileIdx = superblock[openListIdx];
+            break; 
+        }
+        openListIdx++; 
+    }
+    if (!foundOpen) {
+        return TINYFS_ERR_FILE_NOT_OPEN;
+    }
+
+    /* read the file inode */
+    char *inode;
+    inode = malloc(BLOCKSIZE * sizeof(char));
+    if (inode == NULL) {
+        return TINYFS_ERR_MALLOC_FAIL;
+    }
+    if (readBlock(curDiskNum, fileIdx, inode) < 0) {
+        return TINYFS_ERR_READ_BLCK;
+    }
+
+    time_t creationTime = readTime(inode, 20);
+
+    free(superblock);
+    superblock = NULL;
+    free(inode);
+    inode = NULL;
+
+    return creationTime;
+}
+
 int tfs_writeByte(fileDescriptor FD, unsigned int data) {
     /* read the superblock */
     char *superblock;
@@ -1164,6 +1239,10 @@ int tfs_writeByte(fileDescriptor FD, unsigned int data) {
     }
     if (readBlock(curDiskNum, fileIdx, block) < 0) {
         return TINYFS_ERR_READ_BLCK;
+    }
+    writeTime(block, 40); /* update modification timestamp */
+    if (writeBlock(curDiskNum, fileIdx, block) < 0) {
+        return TINYFS_ERR_WRITE_BLCK;
     }
 
     int fpBi = block[4]; 
